@@ -35,7 +35,7 @@
                     <span class="info-box-icon bg-indigo"><i class="fa-solid fa-money-bill-trend-up"></i></span>
                     <div class="info-box-content">
                         <span class="info-box-text">TotalDeposit</span>
-                        <span class="info-box-number counter">{{ $TotalDeposit }}</span>
+                        {{-- <span class="info-box-number counter">{{ $TotalDeposit }}</span> --}}
                     </div>
                 </div>
             </div>
@@ -44,7 +44,7 @@
                     <span class="info-box-icon bg-navy"><i class="fa-solid fa-money-bill-transfer"></i></span>
                     <div class="info-box-content">
                         <span class="info-box-text">TotalWithdraw</span>
-                        <span class="info-box-number counter">{{ $TotalWithdraw }}</span>
+                        {{-- <span class="info-box-number counter">{{ $TotalWithdraw }}</span> --}}
                     </div>
                 </div>
             </div>
@@ -55,7 +55,7 @@
                 <div class="inner">
                     <h3 class="counter">{{$TotalUser}}</h3>
                     <p>
-                        Total User 
+                        Total User
                     </p>
                 </div>
                 <div class="icon">
@@ -97,7 +97,7 @@
             <div class="col-md-4">
                 <div class="small-box bg-indigo">
                     <div class="inner">
-                        <h3 class="counter">{{ $TotalGuest }}</h3>
+                        {{-- <h3 class="counter">{{ $TotalGuest }}</h3> --}}
                         <p>Total Guest</p>
                     </div>
                     <div class="icon">
@@ -111,7 +111,7 @@
             <div class="col-md-4">
                 <div class="small-box bg-orange">
                     <div class="inner">
-                        <h3 class="counter">{{ $TotalBank }}</h3>
+                        {{-- <h3 class="counter">{{ $TotalBank }}</h3> --}}
                         <p>Total Bank</p>
                     </div>
                     <div class="icon">
@@ -125,7 +125,7 @@
             <div class="col-md-4">
                 <div class="small-box bg-fuchsia">
                     <div class="inner">
-                        <h3 class="counter">{{ $TotalAccountNo }}</h3>
+                        {{-- <h3 class="counter">{{ $TotalAccountNo }}</h3> --}}
                         <p> Total AccountNo </p>
                     </div>
                     <div class="icon">
@@ -138,7 +138,7 @@
             </div>
         </div>
 
-       
+
        <div class="row">
            <div class="col-md-12">
                 <div class="card card-primary ">
@@ -156,7 +156,7 @@
                                         <span class="info-box-icon"><i class="fa-solid fa-house-circle-check"></i></span></span>
                                         <div class="info-box-content">
                                             <span class="info-box-text">{{ $Room->RoomNo }}</span>
-                                                
+
                                         </div>
                                     </div>
                                 @else
@@ -164,7 +164,7 @@
                                         <span class="info-box-icon"><i class="fa-brands fa-buromobelexperte"></i></span>
                                         <div class="info-box-content">
                                             <span class="info-box-text">{{ $Room->RoomNo }}</span>
-                                            
+
                                         </div>
                                     </div>
                                 @endif
@@ -174,6 +174,6 @@
                 </div>
            </div>
        </div>
-        
+
     </div>
 @endsection

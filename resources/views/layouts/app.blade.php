@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>{{ config('app.name') }}</title>
     <meta content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no' name='viewport'>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
     {{-- Metarial Icon --}}
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@48,400,0,0"/>
@@ -14,15 +15,15 @@
     <link rel="stylesheet" href="{{asset('css/solid.min.css')}}">
     <link rel="stylesheet" href="{{asset('css/brands.min.css')}}">
 
-    
-    <!-- jquery -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
 
+
+    <!-- jquery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     {{-- bootstrap --}}
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor" crossorigin="anonymous">
-    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Latest compiled JavaScript -->
-    <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 
 
@@ -32,12 +33,12 @@
     {{-- custom css --}}
     <link rel="stylesheet" href="{{ asset('css/custom.css')}}">
     <link href="/css/main.css" rel="stylesheet" media="all">
-    
-  
+
+
     {{-- data table --}}
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.12.1/css/jquery.dataTables.css">  
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.12.1/css/jquery.dataTables.css">
     <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.js"></script>
- 
+
     <script type="text/javascript" src="https://cdn.datatables.net/buttons/2.2.3/js/dataTables.buttons.min.js"></script>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
@@ -47,7 +48,7 @@
 
     <!-- Font special for pages-->
     <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i,800,800i" rel="stylesheet">
-   
+
     <!-- Sweet Alert -->
     <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
@@ -66,8 +67,8 @@
                     <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
                 </li>
             </ul>
-            <ul class="navbar-nav ml-auto">                           
-               
+            <ul class="navbar-nav ml-auto">
+
                 <li class="nav-item">
                     <a class="nav-link" data-widget="navbar-search" href="#" role="button">
                         <i class="fas fa-search"></i>
@@ -90,7 +91,7 @@
                 </li>
                <li class="nav-item dropdown user-menu">
                     <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown">
-                        
+
                         @if(Auth::user()->Photo)
                             <img src="/uploads/{{ Auth::user()->Photo }}" class="user-image img-circle elevation-2" alt="User Photo">
                         @endif
@@ -109,7 +110,7 @@
                         </li>
                         <li class="text-center py-1">
                             <a href="profile/show" class="text-navy"><i class="fa-solid fa-user mr-3 text-navy"></i>Profile</a>
-                            
+
                         </li>
                         <!-- Menu Footer-->
                         <li class="text-center py-1 pb-3">
@@ -125,7 +126,7 @@
                 </li>
             </ul>
         </nav>
-    </div> 
+    </div>
 
 
         <!-- Left side column. contains the logo and sidebar -->
@@ -137,18 +138,8 @@
                 @yield('content')
             </section>
         </div>
-
-        <!-- Main Footer -->
-       <!--  <footer class="main-footer custom__main__footer">
-            <div class="float-right d-none d-sm-block">
-                <b>Hand-crafted & Made with  </b>
-                <i class="bi bi-heart text-danger fs-5"></i>
-            </div>
-            <strong>Copyright &copy; Creative Software Tim</strong> All rights
-            Reserved.
-        </footer> -->
     </div>
-   
+
     <script src="{{ mix('js/app.js') }}" defer></script>
     {{-- custom js --}}
     <script src="{{ URL::asset('/js/custom.js') }}"></script>

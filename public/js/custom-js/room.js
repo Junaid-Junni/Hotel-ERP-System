@@ -1,231 +1,321 @@
-$(document).ready(function(){
-    $.noConflict();
-    var RoomList = $('#RoomList').DataTable({
-        dom:'CBrfltip',
-        serverSide:true,
-        processing:true,
-        colReorder:true,
-        stateSave:true,
-        responsive:true,
-        buttons:[
-            {
-                extend:'copy',
-                text:'<button class="btn btn-primary"><i class="fa fa-copy"></i></button>',
-                titleAttr:'Copy Items'
-            },
-            {
-                extend:'excel',
-                text:'<button class="btn btn-success"><i class="fa fa-table"></i></button>',
-                titleAttr:'Export to Excel',
-                filename:'Room_List',
-            },
-            {
-                extend:'pdf',
-                text:'<button class="btn bg-purple"><i class="fa-solid fa-file-pdf"></i></button>',
-                titleAttr:'Export to Pdf',
-                filename:'Room_List',
-            },
-            {
-                extend:'csv',
-                text:'<button class="btn btn-info"><i class="fas fa-file-csv"></i></button>',
-                titleAttr:'Export to PDF',
-                filename:'Room_List',
-            },
-            {
-                text:'<button class="btn btn-dark"><i class="fa-solid fa-file"></i></button>',
-                titleAttr:'Export To JSON',
-                filename:'Room_List',
-                action:function(e,dt,button,config){
-                    var data = dt.buttons.exportData();
-                    $.fn.dataTable.fileSave(
-                        new Blob([JSON.stringify(data)])
-                    );
-                },
-            },
-        ],
-        ajax:{
-            url:'/room',
-            type:'Get',
-        },
-        columns:
-        [
-            {data:'id',visible:false},
-            {data:'HotelName'},
-            {data:'RoomNo'},
-            {data:'Floor'},
-            {data:'Type'},
-            {data:'Geyser', render:function(data, type,row){
-                return data == 1?'<i class="fa fa-check text-success"></i>':'<i class="fa fa-times text-danger"></i>';
-            }},
-            {data:'AC', render:function(data, type,row){
-                return data == 1?'<i class="fa fa-check text-success"></i>':'<i class="fa-solid fa-xmark text-danger"></i>';
-            }},
-            {data:'Balcony', render:function(data, type,row){
-                return data == 1?'<i class="fa fa-check text-success"></i>':'<i class="fa-solid fa-xmark text-danger"></i>';
-            }},
-            {data:'Internet', render:function(data, type,row){
-                return data == 1?'<i class="fa fa-check text-success"></i>':'<i class="fa-solid fa-xmark text-danger"></i>';
-            }},
-            {data:'TV', render:function(data, type,row){
-                return data == 1? '<i class="fa fa-check text-success"></i>':'<i class="fa-solid fa-xmark text-danger"></i>';
-            }},
-            {data:'Price'},
-            {data:'action'}
-        ]
-    });
+// public/js/rooms.js
 
-    $('#ResetBtnForm').on('click',function(e){
-        e.preventDefault();
-        $('#NewRoomFrom')[0].reset();
-    });
+class RoomManager {
+    constructor() {
+        this.currentRoomId = null;
+        this.init();
+    }
 
-    $('body').on('click','#ViewBtn',function(e){
-        e.preventDefault();
-        var ID = $(this).data('id');
-        console.log(ID);
-        $.ajax({
-            type:'GET',
-            url:'/room/'+ID,
-            success:function(data){
+    init() {
+        this.bindEvents();
+        console.log('RoomManager initialized');
+    }
 
+    bindEvents() {
+        console.log('Binding events...');
 
-                $('#ViewHotel').text(data['HotelName']);
-                $('#ViewRoom').text(data['RoomNo']);
-                $('#ViewFloor').text(data['Floor']);
-                $('#ViewType').text(data['Type']);
-                data['Geyser']  == '1'? $('#ViewGeyser').html('<i class="fa fa-check ml-3 text-success"></i>'):$('#ViewGeyser').html('<i class="fa fa-times text-danger"></i>');             
-                data['AC'] == '1'?$('#ViewAC').html('<i class="fa fa-check ml-3 text-success"></i>'):$('#ViewAC').html('<i class="fa fa-times text-danger"></i>');
-                data['Balcony'] == '1'?$('#ViewBalcony').html('<i class="fa fa-check ml-3 text-success"></i>'):$('#ViewBalcony').html('<i class="fa fa-times text-danger"></i>'); 
-                
-                data['Bathtub'] == '1'?$('#ViewBathtub').html('<i class="fa fa-check ml-3 text-success"></i>'):$('#ViewBathtub').html('<i class="fa fa-times text-danger"></i>'); 
-
-                data['HiComode'] == '1'?$('#ViewHiComode').html('<i class="fa fa-check ml-3 text-success"></i>'):$('#ViewHiComode').html('<i class="fa fa-times text-danger"></i>'); 
-                
-                data['Locker'] == '1'?$('#ViewLocker').html('<i class="fa fa-check ml-3 text-success"></i>'):$('#ViewLocker').html('<i class="fa fa-times text-danger"></i>');
-                
-                data['Freeze'] == '1'?$('#ViewFreeze').html('<i class="fa fa-check ml-3 text-success"></i>'):$('#ViewFreeze').html('<i class="fa fa-times text-danger"></i>'); 
-
-                data['Wardrobe'] == '1'?$('#ViewWardrobe').html('<i class="fa fa-check ml-3 text-success"></i>'):$('#ViewWardrobe').html('<i class="fa fa-times text-danger"></i>'); 
-                
-                data['Intercom'] == '1'?$('#ViewIntercom').html('<i class="fa fa-check ml-3 text-success"></i>'):$('#ViewIntercom').html('<i class="fa fa-times text-danger"></i>'); 
-                
-                data['TV'] == '1'?$('#ViewTV').html('<i class="fa fa-check ml-3 text-success"></i>'):$('#ViewTV').html('<i class="fa fa-times text-danger"></i>'); 
-                
-                data['Freeze'] == '1'?$('#ViewFreeze').html('<i class="fa fa-check ml-3 text-success"></i>'):$('#ViewFreeze').html('<i class="fa fa-times text-danger"></i>'); 
-                
-                data['Price'] == '1'?$('#ViewPrice').html('<i class="fa fa-check ml-3 text-success"></i>'):$('#ViewPrice').html('<i class="fa fa-times text-danger"></i>'); 
-                
-                data['Status'] == '1'?$('#ViewStatus').html('<i class="fa fa-check ml-3 text-success"></i>'):$('#ViewStatus').html('<i class="fa fa-times text-danger"></i>'); 
-                
-                // data[''] == '1'?$('').html('<i class="fa fa-check ml-3 text-success"></i>'):$('').html('<i class="fa fa-times text-danger"></i>'); 
-                
-                
-                $('#ShowRoomModal').modal('show');
-            }
-
+        // View room
+        $(document).on('click', '.view-btn', (e) => {
+            console.log('View button clicked');
+            const roomId = $(e.currentTarget).data('id');
+            console.log('Room ID:', roomId);
+            this.viewRoom(roomId);
         });
-    });
-    $('#SubmitBtn').on('click',function(e){
-        e.preventDefault();
-        
-        $.ajax({
-            type:'POST',
-            url:'/room',
-            data: $('#NewRoomFrom').serializeArray(),
-            success:function(data){
-                $('#NewRoomFrom')[0].reset();
-                $('#NewRoomModal').modal('hide');
-                 Swal.fire(
-                  'Success!',
-                  data,
-                  'success'
-                )
-                RoomList.draw(false);
-            },
-            error:function(data){
-                console.log('Error while adding new hotel' + data);
-            },
+
+        // Delete room
+        $(document).on('click', '.delete-btn', (e) => {
+            console.log('Delete button clicked');
+            const roomId = $(e.currentTarget).data('id');
+            console.log('Room ID:', roomId);
+            this.confirmDelete(roomId);
         });
-    });
 
-    $('body').on('click','#DeleteBtn',function(e){
-        e.preventDefault();
-        // console.log($(this).val());
-        var ID = $(this).data('id');
-        console.log(ID);
-        Swal.fire({
-          title: 'Are you sure?',
-          text: "You won't be able to delete this!",
-          icon: 'warning',
-          showCancelButton: true,
-          confirmButtonColor: '#3085d6',
-          cancelButtonColor: '#d33',
-          confirmButtonText: 'Yes, delete it!'
-        }).then((result) => {
-          if (result.isConfirmed) {
-            $.ajax({
-                type:'GET',
-                url:'/room/delete/'+ID,
-                success:function(data){
-                   Swal.fire(
-                      'Deleted!',
-                      'Your file has been deleted.',
-                      'success'
-                    );
-                },
-                error:function(data){
-                    Swal.fire(
-                      'Error!',
-                      'Delete failed !',
-                      'error'
-                    );
+        // Delete all rooms
+        $('#deleteAllBtn').on('click', () => {
+            console.log('Delete All button clicked');
+            this.confirmDeleteAll();
+        });
 
-                    console.log(data);
-                },
+        // Confirm delete
+        $('#confirmDelete').on('click', () => {
+            console.log('Confirm Delete clicked');
+            this.deleteRoom();
+        });
+
+        // Confirm delete all
+        $('#confirmDeleteAll').on('click', () => {
+            console.log('Confirm Delete All clicked');
+            this.deleteAllRooms();
+        });
+
+        console.log('All events bound successfully');
+    }
+
+    async viewRoom(id) {
+        try {
+            console.log('Fetching room details for ID:', id);
+
+            const response = await $.ajax({
+                url: `/rooms/${id}`,
+                type: 'GET',
+                dataType: 'json'
             });
 
-            
-         }
+            console.log('View room response:', response);
+
+            if (response.success) {
+                this.displayRoomDetails(response.room);
+            } else {
+                this.showAlert('Error loading room details: ' + (response.message || 'Unknown error'), 'error');
+            }
+        } catch (error) {
+            console.error('Error in viewRoom:', error);
+            this.showAlert('Error loading room details. Please try again.', 'error');
+        }
+    }
+
+    displayRoomDetails(room) {
+        console.log('Displaying room details:', room);
+
+        const amenities = this.getAmenitiesList(room);
+        const images = room.Images ? (typeof room.Images === 'string' ? JSON.parse(room.Images) : room.Images) : [];
+
+        let imagesHtml = '';
+        if (images.length > 0) {
+            imagesHtml = `
+                <div class="mt-3">
+                    <h6>Room Images:</h6>
+                    <div class="row">
+                        ${images.map(img => `
+                            <div class="col-md-4 mb-2">
+                                <img src="/storage/${img}" class="img-fluid rounded" alt="Room Image" style="max-height: 150px; object-fit: cover;">
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        const content = `
+            <div class="row">
+                <div class="col-md-6">
+                    <table class="table table-bordered table-sm">
+                        <tr>
+                            <th class="w-40">Room Number:</th>
+                            <td>${room.RoomNo}</td>
+                        </tr>
+                        <tr>
+                            <th>Floor:</th>
+                            <td>${room.Floor}</td>
+                        </tr>
+                        <tr>
+                            <th>Type:</th>
+                            <td>${room.Type}</td>
+                        </tr>
+                        <tr>
+                            <th>Price:</th>
+                            <td>$${parseFloat(room.Price).toFixed(2)}</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <table class="table table-bordered table-sm">
+                        <tr>
+                            <th class="w-40">Capacity:</th>
+                            <td>${room.Capacity} Person${room.Capacity > 1 ? 's' : ''}</td>
+                        </tr>
+                        <tr>
+                            <th>Status:</th>
+                            <td><span class="badge ${this.getStatusBadgeClass(room.Status)}">${room.Status}</span></td>
+                        </tr>
+                        <tr>
+                            <th>Created:</th>
+                            <td>${new Date(room.created_at).toLocaleDateString()}</td>
+                        </tr>
+                        <tr>
+                            <th>Updated:</th>
+                            <td>${new Date(room.updated_at).toLocaleDateString()}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-md-12">
+                    <h6>Amenities:</h6>
+                    ${amenities}
+                </div>
+            </div>
+            ${room.Description ? `
+            <div class="row mt-3">
+                <div class="col-md-12">
+                    <h6>Description:</h6>
+                    <p class="p-2 bg-light rounded">${room.Description}</p>
+                </div>
+            </div>
+            ` : '<div class="row mt-3"><div class="col-md-12"><p class="text-muted">No description provided.</p></div></div>'}
+            ${imagesHtml}
+        `;
+
+        $('#viewModalBody').html(content);
+        $('#viewModal').modal('show');
+    }
+
+    getAmenitiesList(room) {
+        const amenities = [];
+        const amenityMap = {
+            AC: 'Air Conditioning',
+            TV: 'TV',
+            WiFi: 'WiFi',
+            Geyser: 'Geyser',
+            Balcony: 'Balcony',
+            Intercom: 'Intercom',
+            RoomService: 'Room Service',
+            Minibar: 'Minibar'
+        };
+
+        Object.keys(amenityMap).forEach(key => {
+            if (room[key]) {
+                amenities.push(amenityMap[key]);
+            }
         });
-    });
 
-    $('#DeleteAllBtn').on('click',function(e){
-        e.preventDefault();
-         Swal.fire({
-                title: 'Are you sure?',
-                text: "You won't be able to DeleteAll this!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Yes, DeleteAll it!'
+        if (amenities.length === 0) {
+            return '<span class="text-muted">No amenities</span>';
+        }
 
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $.ajax({
-                        type:'GET',
-                        url:'/room/delete',
-                        success:function(data){
-                        Swal.fire(
-                            'DeleteAll!',
-                            'Your file has been DeleteAll.',
-                            'success'
-                            );
-                        },
-                        error:function(data){
-                            Swal.fire(
-                            'Error!',
-                            'DeleteAll failed !',
-                            'error'
-                            );
+        return `
+            <div class="row">
+                ${amenities.map(amenity => `
+                    <div class="col-md-6 mb-1">
+                        <i class="fa fa-check text-success mr-2"></i> ${amenity}
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
 
-                            console.log(data);
-                        },
-                    });
+    getStatusBadgeClass(status) {
+        const classes = {
+            'Available': 'bg-success',
+            'Occupied': 'bg-danger',
+            'Maintenance': 'bg-warning',
+            'Cleaning': 'bg-info'
+        };
+        return classes[status] || 'bg-secondary';
+    }
 
-                    
+    confirmDelete(id) {
+        this.currentRoomId = id;
+        console.log('Setting currentRoomId for deletion:', this.currentRoomId);
+        $('#deleteModal').modal('show');
+    }
+
+    confirmDeleteAll() {
+        $('#deleteAllModal').modal('show');
+    }
+
+    async deleteRoom() {
+        if (!this.currentRoomId) {
+            console.error('No room ID set for deletion');
+            this.showAlert('Error: No room selected for deletion.', 'error');
+            return;
+        }
+
+        console.log('Deleting room with ID:', this.currentRoomId);
+
+        try {
+            const response = await $.ajax({
+                url: `/rooms/${this.currentRoomId}`,
+                type: 'DELETE',
+                data: {
+                    _token: this.getCsrfToken()
                 }
             });
-    });
 
+            console.log('Delete response:', response);
+
+            if (response.success) {
+                this.showAlert(response.message, 'success');
+                $('#deleteModal').modal('hide');
+
+                // Reload the page after a short delay
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
+            } else {
+                this.showAlert(response.message, 'error');
+            }
+        } catch (error) {
+            console.error('Delete error:', error);
+            this.showAlert('Error deleting room. Please try again.', 'error');
+        } finally {
+            this.currentRoomId = null;
+        }
+    }
+
+    async deleteAllRooms() {
+        try {
+            const response = await $.ajax({
+                url: '/rooms',
+                type: 'DELETE',
+                data: {
+                    _token: this.getCsrfToken()
+                }
+            });
+
+            console.log('Delete all response:', response);
+
+            if (response.success) {
+                this.showAlert(response.message, 'success');
+                $('#deleteAllModal').modal('hide');
+
+                // Reload the page after a short delay
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
+            } else {
+                this.showAlert(response.message, 'error');
+            }
+        } catch (error) {
+            console.error('Delete all error:', error);
+            this.showAlert('Error deleting all rooms. Please try again.', 'error');
+        }
+    }
+
+    getCsrfToken() {
+        return $('meta[name="csrf-token"]').attr('content');
+    }
+
+    showAlert(message, type = 'info') {
+        const alertClass = {
+            'success': 'alert-success',
+            'error': 'alert-danger',
+            'warning': 'alert-warning',
+            'info': 'alert-info'
+        }[type] || 'alert-info';
+
+        // Remove existing alerts
+        $('.alert-dismissible').remove();
+
+        const alert = $(`
+            <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                ${message}
+                <button type="button" class="close" data-dismiss="alert">
+                    <span>&times;</span>
+                </button>
+            </div>
+        `);
+
+        $('.card-body').prepend(alert);
+
+        setTimeout(() => {
+            alert.alert('close');
+        }, 5000);
+    }
+}
+
+// Initialize room manager when document is ready
+$(document).ready(function () {
+    console.log('Document ready, initializing RoomManager...');
+    window.roomManager = new RoomManager();
 });

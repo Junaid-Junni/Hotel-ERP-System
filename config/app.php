@@ -15,7 +15,7 @@ return [
     |
     */
 
-    'name' => env('APP_NAME', 'Hotelio'),
+    'name' => env('APP_NAME', 'Hotel Mountain Lagoon'),
 
     /*
     |--------------------------------------------------------------------------

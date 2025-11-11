@@ -11,10 +11,10 @@ use App\Http\Controllers\Api\V1\RoomTransferController as RoomTransferController
 use App\Http\Controllers\Api\V1\TaxSettingController as TaxSettingControllerV1;
 use App\Http\Controllers\Api\V1\UserController as UserControllerV1;
 use App\Http\Controllers\Api\V1\HotelController as HotelControllerV1;
-use App\Http\Controllers\Api\V1\GuestController as GuestControllerV1 ;
+use App\Http\Controllers\Api\V1\GuestController as GuestControllerV1;
 use App\Http\Controllers\Api\V1\EmployeeController as EmployeeControllerV1;
 use App\Http\Controllers\Api\V1\IncomeCategoryController as IncomeCategoryControllerV1;
-use App\Http\Controllers\Api\V1\IncomeController as IncomeControllerV1 ;
+use App\Http\Controllers\Api\V1\IncomeController as IncomeControllerV1;
 use App\Http\Controllers\Api\V1\ExpenseCategoryController as ExpenseCategoryControllerV1;
 use App\Http\Controllers\Api\V1\ExpenseController as ExpenseControllerV1;
 
@@ -39,33 +39,34 @@ use App\Http\Controllers\Api\V1\ExpenseController as ExpenseControllerV1;
 Api Bank Version Group Route
 _______________________________________________________________________
 */
-Route::group(['prefix' => 'v1'], function(){
-    Route::resource('/bank', BankControllerV1::class);
 
-    Route::resource('/room',RoomControllerV1::class);
+Route::group(['prefix' => 'v1'], function () {
+    // Route::resource('/bank', BankControllerV1::class);
 
-    Route::resource('/room-transfer',RoomTransferControllerV1::class);
+    Route::resource('/room', RoomControllerV1::class);
 
-    Route::resource('/booking',BookingControllerV1::class);
+    // Route::resource('/room-transfer',RoomTransferControllerV1::class);
 
-    Route::resource('/user',UserControllerV1::class);
+    Route::resource('/booking', BookingControllerV1::class);
 
-    Route::resource('/invoice',InvoiceControllerV1::class);
+    Route::resource('/user', UserControllerV1::class);
 
-    Route::resource('/tax-setting',TaxSettingControllerV1::class);
+    // Route::resource('/invoice',InvoiceControllerV1::class);
 
-    Route::resource('hotel', HotelControllerV1::class);
+    // Route::resource('/tax-setting',TaxSettingControllerV1::class);
 
-    Route::resource('guest', GuestControllerV1::class);
+    // Route::resource('hotel', HotelControllerV1::class);
+
+    // Route::resource('guest', GuestControllerV1::class);
 
     Route::resource('employee', EmployeeControllerV1::class);
 
-    Route::resource('/income/category', IncomeCategoryControllerV1::class);
+    // Route::resource('/income/category', IncomeCategoryControllerV1::class);
 
-    Route::resource('income', IncomeControllerV1::class);
+    // Route::resource('income', IncomeControllerV1::class);
 
-    Route::resource('/expense/category', ExpenseCategoryControllerV1::class);
+    // Route::resource('/expense/category', ExpenseCategoryControllerV1::class);
 
-    Route::resource('expense', ExpenseControllerV1::class);
-    
+    // Route::resource('expense', ExpenseControllerV1::class);
+
 });

@@ -32,23 +32,23 @@ class HomeController extends Controller
         $Rooms      = Room::all();
         $Users      = User::all();
         $Employes   = Employee::all();
-        $Guests     = Guest::all();
-        $Banks      = Bank::all();
-        $BankLedger = BankLedger::all();
+        // $Guests     = Guest::all();
+        // $Banks      = Bank::all();
+        // $BankLedger = BankLedger::all();
 
         $TotalRooms       = $Rooms->count();
-        $TotalFreeRooms   = $Rooms->where('Status',0)->count();
-        $TotalBookedRooms = $Rooms->where('Status',1)->count();
+        $TotalFreeRooms   = $Rooms->where('Status', 0)->count();
+        $TotalBookedRooms = $Rooms->where('Status', 1)->count();
         $TotalFloor       = $Rooms->where('Floor')->count();
         $TotalUser        = $Users->count();
         $TotalEmployee    = $Employes->count();
-        $TotalGuest       = $Guests->count();
-        $TotalBank        = $Banks->count();
-        $TotalAccountNo   = $Banks->where('AccountNo')->count();
-        $TotalWithdraw    = $BankLedger->where('Withdraw')->count();
-        $TotalDeposit     = $BankLedger->where('Deposit')->count();
+        // $TotalGuest       = $Guests->count();
+        // $TotalBank        = $Banks->count();
+        // $TotalAccountNo   = $Banks->where('AccountNo')->count();
+        // $TotalWithdraw    = $BankLedger->where('Withdraw')->count();
+        // $TotalDeposit     = $BankLedger->where('Deposit')->count();
 
-        return view('home',compact('Rooms','TotalRooms','TotalBookedRooms','TotalFreeRooms', 'TotalUser', 'TotalEmployee', 'TotalFloor', 'TotalGuest', 'TotalBank', 'TotalAccountNo', 'TotalWithdraw', 'TotalDeposit'));
+        return view('home', compact('Rooms', 'TotalRooms', 'TotalFloor', 'TotalBookedRooms', 'TotalFreeRooms', 'TotalUser', 'TotalEmployee'));
+        return view('home');
     }
-    
 }

@@ -4,10 +4,10 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        <title>Laravel</title>
+        <title>Hotel Mountain Lagoon Skardu</title>
         <title>{{config('app.name')}}</title>
- 
-        
+
+
 
         <!-- Fonts -->
         <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
@@ -418,50 +418,35 @@
                 {{-- <a href="{{ route('login') }}" class="btn btn-outline-primary" >Log in</a> --}}
 
                 @if (Route::has('register'))
-                    <a href="{{ route('register') }}" class="btn btn-outline-primary">Register</a>
+                    <a href="{{ route('register') }}" class="btn btn-primary">Register</a>
                 @endif
             @endauth
         </div>
     @endif
 
     <body>
-        {{-- <div class="banner1">
+        <div class="banner1">
             <img src="img/hotel/hotel1.jpg" alt="">
-            <div class="text_box text_box1">
-                <h1>Welcome To Hotelio</h1>
-                <span></span>
-                <p>Where customer satisfaction is a philosophy</p>
-            </div>
         </div>
         <div class="banner3">
-            <img src="img/hotel/room.jpg" alt="">
-            <div class="text_box text_box3">
-                <h1>Welcome To Hotelio</h1>
-                <span></span>
-                <p>Where customer satisfaction is a philosophy</p>
-
-            </div>
+            <img src="img/hotel/hotel2.jpg" alt="">
         </div>
         <div class="banner4">
-            <img src="img/hotel/washroom.jpg" alt="">
-            <div class="text_box text_box4">
-                <h1>Welcome To Hotelio</h1>
-                <span></span>
-                <p>Where customer satisfaction is a philosophy</p>
-            </div>
-        </div> --}}
+            <img src="img/hotel/hotel3.jpg" alt="">
+        </div>
 
-        <div class="row">
+        <div class="row" style="background-color: lightblue">
             <div class="col-md-4">
                 <div class="left">
                     <div class="col-md-9 text-center">
-                        <div class="container">
+                        <div class="container" style="font-weight:bold">
                             <div class="d-flex flex-column  pt-5">
-                                <div class="left-headig">
-                                    <h1>Hotelio</h1>
+                                <div class="left-headig" >
+                                    <h1 style="font-weight:bold">HOTEL MOUNTAIN</h1>
+                                    <h2 style="font-weight:bold">LAGOON SKARDU</h2>
                                 </div>
                                 <div>
-                                    <h4>Welcome Back!</h4>
+                                    <h4 style="font-weight:bold">Welcome Back!</h4>
                                 </div>
                                 <div>
                                     <p class="">
@@ -478,15 +463,15 @@
                 </div>
             </div>
 
-            <div class="col-md-8 m-auto">
-                <div class="right">
-                    <div class="container">
+           <div class="col-md-8 m-auto">
+                <div>
+                    <div class="container" >
                         <div class="row">
-                            <div class="col-md-6 m-auto">
+                            <div class="col-md-6 m-auto" style="background-color: #fff; border-radius: 8px; padding: 30px; box-shadow: 0 0 10px rgba(0,0,0,0.1); width:500px">
                                 <form method="post" action="{{ route('login') }}">
                                     @csrf
                                     <div class="text-center py-3">
-                                        <h3>Sign in your account</h3>
+                                        <h3 style="font-family: 'Times New Roman', Times, serif; font-weight:bold">Sign in your account</h3>
                                     </div>
                                     <div class="mb-3">
                                         <label for="email" class="form-label">Email</label>
@@ -505,19 +490,17 @@
                                     <div class="form-check">
                                         <input class="form-check-input" type="checkbox" id="gridCheck">
                                         <label class="form-check-label" for="gridCheck">
-                                        Remember my preference</label>
+                                            Remember my preference
+                                        </label>
                                     </div>
                                     <div>
-                                        <button type="submit" class="btn btn-primary w-100 mt-2">Sign In</button>
-                                        
-
+                                        <button type="submit" class="btn btn-primary w-100 mt-2" style="font-weight:bold">Sign In</button>
                                     </div>
-                            
                                     <div>
                                         <a href="{{ route('password.request') }}">I forgot my password</a>
                                     </div>
                                     <div class="py-2">
-                                        <p>Don't have an account?<a href="{{ route('register')}}"" class="">Sign UP</a></p>
+                                        <p>Don't have an account? <a href="{{ route('register')}}" style="background-color: #dbeafe; padding: 4px 8px; border-radius: 4px; text-decoration: none; font-weight:bold">Sign Up</a></p>
                                     </div>
                                 </form>
                             </div>
@@ -525,7 +508,7 @@
                     </div>
                 </div>
             </div>
-        </div>
+
 {{-- </div> --}}
 
         <script src="/1sday/js/bootstrap.esm.min.js"></script>

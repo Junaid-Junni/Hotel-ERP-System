@@ -1,217 +1,333 @@
-$(document).ready(function(){
-    $.noConflict();
-    var EmployeeList = $('#Employeelist').DataTable({
-        dom         : 'Btlftip',
-        processing:true,
-        colReorder:true,
-        serverSide:true,
-        stateSave :true,
-        responsive:true,
-        buttons:[
-                {
-                    extend : 'copy',
-                    text : "<button class = 'btn btn-success'><i class='fa fa-copy'></i></button>",
-                    titleAttr : 'Copy Items',
-                },
-                {
-                    extend : 'excel',
-                    text : "<button class = 'btn btn-primary'><i class ='fa fa-file-excel'></i></button>",
-                    titleAttr : 'Export to Excel',
-                    filename: "Employee_List",
+// public/js/employees.js
 
-                },
-                {
-                    extend : 'pdf',
-                    text : "<button class='btn btn-success'><i class = 'fa fa-file-pdf'></i></button>",
-                    titleAttr : 'Export to PDF',
-                    filename : 'Employee_list',
-                },
-                {
-                    extend : 'csv',
-                    text : '<button class = "btn btn-primary"><i class="fa-solid fa-file-csv"></i></button>',
-                    titleAttr : "Export to CSV",
-                    filename : 'Employee_list',
-                },
-                {
-                    text : "<button class = 'btn btn-success'><i class = 'fa fa-file'></i></button>",
-                    titleAttr : "Export to JSON",
-                    filename : 'Employee_list',
-                    action:function(e,dt,button,config){
-                        var data = dt.buttons.exportData();
-                        $.fn.dataTable.fileSave(
-                            new Blob([JSON.stringify(data)])
-                        );
-                    },
-                },
-            ],
-        ajax:{
-            url : "/employee",
-            type: "GET"
-        },
-        columns:
-        [   
+class EmployeeManager {
+    constructor() {
+        this.currentEmployeeId = null;
+        this.currentStatus = null;
+        this.init();
+    }
 
-            {data : 'Hotel'},
-            {data : 'Name'},
-            {data : 'Designation'},
-            {data : 'Phone'},
-            {data : 'Email'},
-            {data : 'Address'},
-            {data : 'DateOfJoin'},
-            {data : 'Status', render:function (data, type , row) { return data == 1? '<i class="fa fa-check text-success"></i>':'<i class="fa fa-times text-danger"></i>';
-        }}, 
-            {data : 'action',name:'action'},
-        ]
-    });
+    init() {
+        this.bindEvents();
+    }
 
-    $('#AddNewBtn').on('click',function(e){
-        e.preventDefault();
-        $('#newEmployeeModal').modal('show'); 
-    });
-
-    $('#formResetBtn').on('click',function(e){
-        e.preventDefault();
-        $('#newCreateEmployee')[0].reset();
-    });
-
-    $('#submitBtn').on('click',function(e){
-        e.preventDefault();
-        $.ajax({
-            type    : 'POST',
-            url     : '/employee',
-            data    : $('#newCreateEmployee').serialize(),success:function(data){
-                $('#newCreateEmployee')[0].reset();
-                $('#newEmployeeModal').modal('hide'); 
-                Swal.fire(
-                    'Success!',
-                    data,
-                    'success'
-                );
-                EmployeeList.draw(false);
-            },
-            error:function(data){
-                console.log('Error while adding new Bank'+data);
-            },
+    bindEvents() {
+        // View employee
+        $(document).on('click', '.view-btn', (e) => {
+            this.viewEmployee($(e.currentTarget).data('id'));
         });
-    });
 
-    $('body').on('click','#DeleteBtn',function(e) {
-        e.preventDefault();
-        var ID = $(this).data('id');
-        console.log(ID);
-        Swal.fire({
-            title: 'Are you sure?',
-            text: "You won't be able to revert this!",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Yes, delete it!'
-        }).then((result)=>{
-            if(result.isConfirmed){
-                $.ajax({
-                    type    :   "GET",
-                    url     : "/employee/delete/"+ID,
-                    success:function(data){
-                        EmployeeList.draw(false);
-                        Swal.fire(
-                          'Deleted!',
-                          'Your file has been deleted.',
-                          'success'
-                        );
-                    },
-                    error:function(data){
-                        Swal.fire(
-                          'Error!',
-                          'Delete failed !',
-                          'error'
-                        );
-
-                        console.log(data);
-                    },
-                });
-            }
+        // Delete employee
+        $(document).on('click', '.delete-btn', (e) => {
+            this.confirmDelete($(e.currentTarget).data('id'));
         });
-    });
 
-    $('body').on('click','#EditBtn',function(e) {
-        e.preventDefault();
-        var ID = $(this).data('id');
-        $.ajax({
-            type    : 'GET',
-            url     : '/employee/'+ID,
-            data    : $('updateForm').serializeArray(),
-            success:function(data){
-                // console.log(data['Name']);
-                $('#updateForm')[0].reset();
-                $('#IDEdit').val(data['id']);
-                $('#HotelIDEdit').val(data['HotelID']);
-                $('#EditName').val(data['Name']);
-                $('#DesignationEdit').val(data['Designation']);
-                $('#DateOfBirthEdit').val(data['DateOfBirth']);
-                $('#NIDNoEdit').val(data['NIDNo']);
-                $('#NIDEdit').val(data['NID']);
-                $('#PhoneEdit').val(data['Phone']);
-                $('#EmailEdit').val(data['Email']);
-                $('#AddressEdit').val(data['Address']);
-                $('#DateOfJoinEdit').val(data['DateOfJoin']);
-                $('#StatusEdit').val(data['Status']);
-                $('#EditEmployeeModal').modal('show');
-            },
-            error:function(data){
-                console.log(data);
-            },
+        // Delete all employees
+        $('#deleteAllBtn').on('click', () => {
+            this.confirmDeleteAll();
         });
-    });
-    
-    $('#updateBtn').on('click',function(e) {
-            e.preventDefault();
-            var ID = $('#IDEdit').val();
-            $.ajax({
-                type    : 'PATCH',
-                url     : '/employee/'+ID,
-                data    : $('#updateForm').serializeArray(),
-                success:function(data){
-                    $('#EditEmployeeModal').modal('hide');
-                    $('#updateForm')[0].reset();
-                    Swal.fire(
-                      'Success!',
-                      data,
-                      'success'
-                    );
-                    EmployeeList.draw(false);
-                },
-                error:function(data){
-                    console.log(data);
-                },
+
+        // Status change
+        $(document).on('click', '.status-btn', (e) => {
+            const target = $(e.currentTarget);
+            this.confirmStatusChange(target.data('id'), target.data('status'));
+        });
+
+        // Confirm actions
+        $('#confirmDelete').on('click', () => {
+            this.deleteEmployee();
+        });
+
+        $('#confirmDeleteAll').on('click', () => {
+            this.deleteAllEmployees();
+        });
+
+        $('#confirmStatus').on('click', () => {
+            this.updateEmployeeStatus();
+        });
+    }
+
+    async viewEmployee(id) {
+        try {
+            const response = await $.ajax({
+                url: `/employees/${id}`,
+                type: 'GET'
             });
-    });
 
-    $('body').on('click','#ViewBtn',function(e){
-        e.preventDefault();
-        var ID =$(this).data('id');
+            if (response.success) {
+                this.displayEmployeeDetails(response.employee);
+            } else {
+                this.showAlert('Error loading employee details.', 'error');
+            }
+        } catch (error) {
+            this.showAlert('Error loading employee details.', 'error');
+        }
+    }
 
-        $.ajax({
-            type : 'GET',
-            url  : '/employee/'+ID,
-            success:function(data){
-                $('#ViewHotle').text(data['HotelName']);
-                $('#ViewName').text(data['Name']);
-                $('#ViewDateOfBirth').text(data['DateOfBirth']);
-                $('#ViewNIDNo').text(data['NIDNo']);
-                $('#ViewNID').text(data['NID']);
-                $('#ViewPhone').text(data['Phone']);
-                $('#ViewEmail').text(data['Email']);
-                $('#ViewAddress').text(data['Address']);
-                $('#ViewDesignation').text(data['Designation']);
-                $('#ViewDateOfJoin').text(data['DateOfJoin']);
-                $('#ViewStatus').text(data['Status']);
-                
-                $('#ShowEmployeeModal').modal('show');
-            },
-            error:function (data) {
-                console.log(data);
-              },
-        });
-    });
+    displayEmployeeDetails(employee) {
+        const profileImage = employee.profile_image
+            ? `<img src="/storage/${employee.profile_image}" class="img-fluid rounded mb-3" style="max-height: 200px;">`
+            : '<div class="text-muted mb-3">No profile image</div>';
+
+        const content = `
+            <div class="row">
+                <div class="col-md-4 text-center">
+                    ${profileImage}
+                    <h4>${employee.first_name} ${employee.last_name}</h4>
+                    <p class="text-muted">${employee.employee_id}</p>
+                    <span class="badge ${this.getStatusBadgeClass(employee.status)}">${employee.status}</span>
+                </div>
+                <div class="col-md-8">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-bordered">
+                                <tr>
+                                    <th>Email:</th>
+                                    <td>${employee.email}</td>
+                                </tr>
+                                <tr>
+                                    <th>Phone:</th>
+                                    <td>${employee.phone}</td>
+                                </tr>
+                                <tr>
+                                    <th>Date of Birth:</th>
+                                    <td>${new Date(employee.date_of_birth).toLocaleDateString()}</td>
+                                </tr>
+                                <tr>
+                                    <th>Gender:</th>
+                                    <td>${employee.gender}</td>
+                                </tr>
+                                <tr>
+                                    <th>Position:</th>
+                                    <td>${employee.position}</td>
+                                </tr>
+                                <tr>
+                                    <th>Department:</th>
+                                    <td>${employee.department}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-bordered">
+                                <tr>
+                                    <th>Salary:</th>
+                                    <td>$${parseFloat(employee.salary).toFixed(2)}</td>
+                                </tr>
+                                <tr>
+                                    <th>Hire Date:</th>
+                                    <td>${new Date(employee.hire_date).toLocaleDateString()}</td>
+                                </tr>
+                                <tr>
+                                    <th>Employment Type:</th>
+                                    <td>${employee.employment_type}</td>
+                                </tr>
+                                <tr>
+                                    <th>Address:</th>
+                                    <td>${employee.address}, ${employee.city}, ${employee.state} ${employee.zip_code}</td>
+                                </tr>
+                                <tr>
+                                    <th>Country:</th>
+                                    <td>${employee.country}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Emergency Contact -->
+            <div class="row mt-3">
+                <div class="col-md-12">
+                    <h5>Emergency Contact</h5>
+                    <table class="table table-bordered">
+                        <tr>
+                            <th>Name:</th>
+                            <td>${employee.emergency_contact_name}</td>
+                            <th>Phone:</th>
+                            <td>${employee.emergency_contact_phone}</td>
+                            <th>Relationship:</th>
+                            <td>${employee.emergency_contact_relation}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Bank Information -->
+            ${employee.bank_name ? `
+            <div class="row mt-3">
+                <div class="col-md-12">
+                    <h5>Bank Information</h5>
+                    <table class="table table-bordered">
+                        <tr>
+                            <th>Bank Name:</th>
+                            <td>${employee.bank_name}</td>
+                            <th>Account Number:</th>
+                            <td>${employee.account_number ? '••••' + employee.account_number.slice(-4) : 'N/A'}</td>
+                            <th>Routing Number:</th>
+                            <td>${employee.routing_number || 'N/A'}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            ` : ''}
+
+            <!-- Additional Information -->
+            ${employee.notes ? `
+            <div class="row mt-3">
+                <div class="col-md-12">
+                    <h5>Additional Information</h5>
+                    <div class="card">
+                        <div class="card-body">
+                            <p>${employee.notes}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            ` : ''}
+        `;
+
+        $('#viewModalBody').html(content);
+        $('#viewModal').modal('show');
+    }
+
+    getStatusBadgeClass(status) {
+        const classes = {
+            'Active': 'bg-success',
+            'Inactive': 'bg-secondary',
+            'Suspended': 'bg-warning',
+            'Terminated': 'bg-danger'
+        };
+        return classes[status] || 'bg-secondary';
+    }
+
+    confirmDelete(id) {
+        this.currentEmployeeId = id;
+        $('#deleteModal').modal('show');
+    }
+
+    confirmDeleteAll() {
+        $('#deleteAllModal').modal('show');
+    }
+
+    confirmStatusChange(id, status) {
+        this.currentEmployeeId = id;
+        this.currentStatus = status;
+        $('#statusText').text(status);
+        $('#statusModal').modal('show');
+    }
+
+    async deleteEmployee() {
+        if (!this.currentEmployeeId) return;
+
+        try {
+            const response = await $.ajax({
+                url: `/employees/${this.currentEmployeeId}`,
+                type: 'DELETE',
+                data: {
+                    _token: $('meta[name="csrf-token"]').attr('content')
+                }
+            });
+
+            if (response.success) {
+                this.showAlert(response.message, 'success');
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            } else {
+                this.showAlert(response.message, 'error');
+            }
+        } catch (error) {
+            this.showAlert('Error deleting employee.', 'error');
+        } finally {
+            $('#deleteModal').modal('hide');
+            this.currentEmployeeId = null;
+        }
+    }
+
+    async deleteAllEmployees() {
+        try {
+            const response = await $.ajax({
+                url: '/employees',
+                type: 'DELETE',
+                data: {
+                    _token: $('meta[name="csrf-token"]').attr('content')
+                }
+            });
+
+            if (response.success) {
+                this.showAlert(response.message, 'success');
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            } else {
+                this.showAlert(response.message, 'error');
+            }
+        } catch (error) {
+            this.showAlert('Error deleting all employees.', 'error');
+        } finally {
+            $('#deleteAllModal').modal('hide');
+        }
+    }
+
+    async updateEmployeeStatus() {
+        if (!this.currentEmployeeId || !this.currentStatus) return;
+
+        try {
+            const response = await $.ajax({
+                url: `/employees/${this.currentEmployeeId}/status`,
+                type: 'POST',
+                data: {
+                    _token: $('meta[name="csrf-token"]').attr('content'),
+                    status: this.currentStatus
+                }
+            });
+
+            if (response.success) {
+                this.showAlert(response.message, 'success');
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            } else {
+                this.showAlert(response.message, 'error');
+            }
+        } catch (error) {
+            this.showAlert('Error updating employee status.', 'error');
+        } finally {
+            $('#statusModal').modal('hide');
+            this.currentEmployeeId = null;
+            this.currentStatus = null;
+        }
+    }
+
+    showAlert(message, type = 'info') {
+        const alertClass = {
+            'success': 'alert-success',
+            'error': 'alert-danger',
+            'warning': 'alert-warning',
+            'info': 'alert-info'
+        }[type] || 'alert-info';
+
+        // Remove existing alerts
+        $('.alert-dismissible').remove();
+
+        const alert = $(`
+            <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                ${message}
+                <button type="button" class="close" data-dismiss="alert">
+                    <span>&times;</span>
+                </button>
+            </div>
+        `);
+
+        $('.card-body').prepend(alert);
+
+        setTimeout(() => {
+            alert.alert('close');
+        }, 5000);
+    }
+}
+
+// Initialize employee manager when document is ready
+$(document).ready(function () {
+    window.employeeManager = new EmployeeManager();
 });

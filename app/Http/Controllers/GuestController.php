@@ -1,148 +1,171 @@
 <?php
+// app/Http/Controllers/GuestController.php
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Guest;
-use Exception;
-use Ramsey\Uuid\Guid\Guid;
-use Yajra\Datatables\Datatables;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
+use Yajra\DataTables\DataTables;
+use Illuminate\Support\Facades\Log;
 
 class GuestController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
     public function index()
-    {   
-        // return Guest::all();
-        if(request()->ajax())
-        {
-            return  $Guests = Datatables::of(Guest::all())
-            ->addColumn('action','layouts.dt_buttons')
-            ->make(true);
-        }
-      
-        return view('guest.index');
+    {
+        return view('guests.index');
     }
 
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
     public function create()
     {
-        
-        return view('guest.create');
+        return view('guests.create');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
+    public function getGuests(Request $request)
+    {
+        if ($request->ajax()) {
+            $data = Guest::latest()->get();
+
+            return DataTables::of($data)
+                ->addIndexColumn()
+                ->addColumn('action', function ($row) {
+                    $actionBtn = '
+                    <div class="btn-group">
+                        <button class="btn btn-sm btn-info ViewBtn" data-id="' . $row->id . '" title="View">
+                            <i class="fa fa-eye"></i>
+                        </button>
+                        <button class="btn btn-sm btn-warning EditBtn" data-id="' . $row->id . '" title="Edit">
+                            <i class="fa fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger DeleteBtn" data-id="' . $row->id . '" title="Delete">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    </div>';
+                    return $actionBtn;
+                })
+                ->addColumn('full_name', function ($row) {
+                    return $row->first_name . ' ' . $row->last_name;
+                })
+                ->editColumn('date_of_birth', function ($row) {
+                    return $row->date_of_birth ? $row->date_of_birth->format('M d, Y') : 'N/A';
+                })
+                ->rawColumns(['action'])
+                ->make(true);
+        }
+
+        return response()->json(['error' => 'Not an AJAX request'], 400);
+    }
+
     public function store(Request $request)
     {
-        
-        try{
-            Guest::create($request->all());
-            return 'Guest Add Succeessfull!';
+        $validator = Validator::make($request->all(), [
+            'first_name' => 'required|string|max:50',
+            'last_name' => 'required|string|max:50',
+            'email' => 'required|email|unique:guests,email',
+            'phone' => 'required|string|max:20',
+            'address' => 'required|string|max:255',
+            'city' => 'required|string|max:50',
+            'country' => 'required|string|max:50',
+            'id_type' => 'required|string|in:Passport,Driving License,National ID,Other',
+            'id_number' => 'required|string|max:50',
+            'date_of_birth' => 'nullable|date',
+            'nationality' => 'required|string|max:50',
+            'notes' => 'nullable|string|max:500'
+        ]);
+
+        if ($validator->fails()) {
+            return redirect()->back()
+                ->withErrors($validator)
+                ->withInput();
         }
-        catch(Exception $error){
-            return $error->getMessage();
+
+        try {
+            $guest = Guest::create($request->all());
+
+            return redirect()->route('guest.index')
+                ->with('success', 'Guest created successfully!');
+        } catch (\Exception $e) {
+            Log::error('Guest creation failed: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Failed to create guest: ' . $e->getMessage())
+                ->withInput();
         }
     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
     public function show($id)
     {
-        $Guest = Guest::find($id);
-        return $Guest;
+        try {
+            $guest = Guest::findOrFail($id);
+            return response()->json($guest);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Guest not found'], 404);
+        }
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
     public function edit($id)
     {
-        $Guests = Guest::find($id);
-        return view('guest.edit' ,compact('Guests'));
+        try {
+            $guest = Guest::findOrFail($id);
+            return view('guests.edit', compact('guest'));
+        } catch (\Exception $e) {
+            return redirect()->route('guest.index')
+                ->with('error', 'Guest not found');
+        }
     }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request , $id)
+    public function update(Request $request, $id)
     {
-        Guest::find($id)->update($request->all());
-        return "Data Successfully Updated ! ";
+        $validator = Validator::make($request->all(), [
+            'first_name' => 'required|string|max:50',
+            'last_name' => 'required|string|max:50',
+            'email' => 'required|email|unique:guests,email,' . $id,
+            'phone' => 'required|string|max:20',
+            'address' => 'required|string|max:255',
+            'city' => 'required|string|max:50',
+            'country' => 'required|string|max:50',
+            'id_type' => 'required|string|in:Passport,Driving License,National ID,Other',
+            'id_number' => 'required|string|max:50',
+            'date_of_birth' => 'nullable|date',
+            'nationality' => 'required|string|max:50',
+            'notes' => 'nullable|string|max:500'
+        ]);
+
+        if ($validator->fails()) {
+            return redirect()->back()
+                ->withErrors($validator)
+                ->withInput();
+        }
+
+        try {
+            $guest = Guest::findOrFail($id);
+            $guest->update($request->all());
+
+            return redirect()->route('guest.index')
+                ->with('success', 'Guest updated successfully!');
+        } catch (\Exception $e) {
+            Log::error('Guest update failed: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Failed to update guest: ' . $e->getMessage())
+                ->withInput();
+        }
     }
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
     public function destroy($id)
     {
-        Guest::find($id)->delete();
-        return back()->with('delete','Deleted data is stored in the trash');
+        try {
+            $guest = Guest::findOrFail($id);
+            $guest->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Guest moved to trash successfully!'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Guest deletion failed: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete guest: ' . $e->getMessage()
+            ], 500);
+        }
     }
-
- 
-    public function destroyAll()
-    {
-        Guest::withTrashed()->delete();
-        return back()->with('destroyAll','Deleted All data is stored in the trash');
-    } 
-
-    
-    public function trash()
-    {
-        $GuestTrashed = Guest::onlyTrashed()->get();
-        return view('guest.trash',compact('GuestTrashed'));
-    }    
-
-    
-    public function restore($id)
-    {
-        Guest::withTrashed()->where('id',$id)->restore();
-        return back()->with('Restore','Restore Successfull !');
-    }
-
-    public function restoreAll()
-    {
-        Guest::withTrashed()->restore();
-        return back()->with('RestoreAll','সমস্ত ডাটাকে পুনরুদ্ধার করা হয়েছে ');
-    }
-
-    public function forceDelete($id)
-    {
-        Guest::withTrashed()->where('id',$id)->forceDelete();
-        return back()->with('Parmanentlly','Parmanentlly Delete');
-    }
-
-    public function emptyTrash()
-    {
-        Guest::onlyTrashed()->forceDelete();
-        return $this->index()->with('emptyTrash','ট্রাস সম্পূর্ণরূপে খালি করা হলো ');
-    }
-
 }

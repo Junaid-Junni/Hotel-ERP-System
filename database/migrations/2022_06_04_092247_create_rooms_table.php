@@ -1,50 +1,42 @@
 <?php
+// database/migrations/2024_01_01_000001_create_rooms_table.php
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
+class CreateRoomsTable extends Migration
 {
-    /**
-     * Run the migrations.
-     *
-     * @return void
-     */
     public function up()
     {
         Schema::create('rooms', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('HoteID');
-            // $table->foreign('HotelID')->references('id')->on('hotels');
-            $table->string('RoomNo')->nullable();
-            $table->string('Floor')->nullable();
-            $table->string('Type')->nullable();
-            $table->boolean('Geyser')->nullable();
-            $table->boolean('AC')->nullable();
-            $table->boolean('Balcony')->nullable();
-            $table->boolean('Bathtub')->nullable();
-            $table->boolean('HiComode')->nullable();
-            $table->boolean('Locker')->nullable();
-            $table->boolean('Freeze')->nullable();
-            $table->boolean('Internet')->nullable();
-            $table->boolean('Intercom')->nullable();
-            $table->boolean('TV')->nullable();
-            $table->boolean('Wardrobe')->nullable();
-            $table->decimal('Price')->nullable();
-            $table->json('AdditionalFeatures')->nullable();
-            $table->boolean('Status')->nullable();
+            $table->integer('RoomNo')->unique(); // Changed to integer for room numbers 1-29
+            $table->enum('Floor', ['1st Floor', '2nd Floor', '3rd Floor', '4th Floor']);
+            $table->enum('Type', ['Standard', 'Deluxe', 'Suite']);
+            $table->decimal('Price', 10, 2);
+            $table->enum('Capacity', [1, 2, 3, 4]); // Limited to 1-4 persons
+            $table->enum('Status', ['Available', 'Occupied', 'Maintenance', 'Cleaning'])->default('Available');
+            $table->text('Description')->nullable();
+
+            // Amenities
+            $table->boolean('AC')->default(false);
+            $table->boolean('TV')->default(false);
+            $table->boolean('WiFi')->default(false);
+            $table->boolean('Geyser')->default(false);
+            $table->boolean('Balcony')->default(false);
+            $table->boolean('Intercom')->default(false);
+            $table->boolean('RoomService')->default(false);
+            $table->boolean('Minibar')->default(false);
+
+            $table->json('Images')->nullable();
+            $table->softDeletes();
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     *
-     * @return void
-     */
     public function down()
     {
         Schema::dropIfExists('rooms');
     }
-};
+}
