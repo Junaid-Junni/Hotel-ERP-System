@@ -35,6 +35,41 @@
     </a>
 </li>
 
+@role('admin')
+{{-- <--Admin Panel--> --}}
+{{-- roles  --}}
+<li class="nav-item">
+    <a href="{{ route('admin.roles.roles') }}" class="nav-link {{ Request::is('admin') ? 'active' : '' }}">
+        <i class="fa-solid fa-user nav-icon fas"></i>
+        <p>Roles</p>
+    </a>
+</li>
+@endrole
+
+@role('staff')
+{{-- <--Admin Panel--> --}}
+{{-- roles  --}}
+<li class="nav-item">
+    <a href="{{ route('admin.roles.roles') }}" class="nav-link {{ Request::is('admin') ? 'active' : '' }}">
+        <i class="fa-solid fa-user nav-icon fas"></i>
+        <p>Test Staff Roll</p>
+    </a>
+</li>
+@endrole
+
+@role('user')
+{{-- <--Admin Panel--> --}}
+{{-- roles  --}}
+<li class="nav-item">
+    <a href="{{ route('admin.roles.roles') }}" class="nav-link {{ Request::is('admin') ? 'active' : '' }}">
+        <i class="fa-solid fa-user nav-icon fas"></i>
+        <p>Test User Roll</p>
+    </a>
+</li>
+@endrole
+
+
+
 {{-- <--Employees--> --}}
 <li class="nav-item">
     <a href="{{ route('employees.index') }}" class="nav-link {{ Request::is('employees*') ? 'active' : '' }}">

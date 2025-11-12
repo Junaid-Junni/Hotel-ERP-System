@@ -40,7 +40,9 @@
                                         <th>Salary</th>
                                         <th>Status</th>
                                         <th>Hire Date</th>
+                                        @can('manage users')
                                         <th>Actions</th>
+                                        @endcan
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -66,6 +68,7 @@
                                             </span>
                                         </td>
                                         <td>{{ \Carbon\Carbon::parse($employee->hire_date)->format('M d, Y') }}</td>
+                                         @can('manage users')
                                         <td>
                                             <div class="btn-group">
                                                 <button class="btn btn-sm btn-info view-btn" data-id="{{ $employee->id }}">
@@ -90,6 +93,7 @@
                                                 </button>
                                             </div>
                                         </td>
+                                        @endcan
                                     </tr>
                                     @endforeach
                                 </tbody>

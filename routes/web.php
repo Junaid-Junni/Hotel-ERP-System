@@ -13,6 +13,7 @@ use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\HousekeepingController;
+use App\Http\Controllers\Admin\RolePermissionController;
 use Ramsey\Uuid\Guid\Guid;
 
 /*
@@ -37,6 +38,19 @@ Route::resource('user', RegisteredUserController::class);
 Route::post('user/assign/role', [UserController::class, 'assignRole']);
 
 Route::get('/', [HotelioController::class, 'index']);
+
+
+Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
+    // Users & Roles
+    Route::get('users', [RolePermissionController::class, 'index'])->name('roles.index');
+    Route::get('users/{id}/edit', [RolePermissionController::class, 'editUserRoles'])->name('roles.edit');
+    Route::post('users/{id}/update', [RolePermissionController::class, 'updateUserRoles'])->name('roles.update');
+
+    // Roles & Permissions
+    Route::get('roles', [RolePermissionController::class, 'roles'])->name('roles.roles');
+    Route::post('roles/{id}/permissions', [RolePermissionController::class, 'updateRolePermissions'])->name('roles.permissions.update');
+});
+
 
 Route::group(['middleware' => 'auth'], function () {
     Route::get('/dashboard', function () {
