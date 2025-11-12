@@ -83,6 +83,13 @@
                                                     <i class="fa fa-edit"></i>
                                                 </a>
 
+                                                {{-- In the actions column of your booking index --}}
+                                                @if(!$booking->is_fully_paid && $booking->status != 'Cancelled')
+                                                    <a href="{{ route('payments.create', $booking->id) }}" class="btn btn-sm btn-success payment-link" title="Add Payment" onclick="event.stopPropagation()">
+                                                        <i class="fas fa-money-bill-wave"></i>
+                                                    </a>
+                                                @endif
+
                                                 @if($booking->status == 'Confirmed')
                                                     <button class="btn btn-sm btn-success checkin-btn" data-id="{{ $booking->id }}">
                                                         <i class="fa fa-sign-in"></i>

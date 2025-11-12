@@ -1,83 +1,75 @@
 // public/js/rooms.js
 
-class RoomManager {
-    constructor() {
-        this.currentRoomId = null;
-        this.init();
+document.addEventListener('DOMContentLoaded', function () {
+    console.log('Room Manager initialized');
+
+    let currentRoomId = null;
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+    // View Room
+    document.querySelectorAll('.view-btn').forEach(button => {
+        button.addEventListener('click', function () {
+            const roomId = this.getAttribute('data-id');
+            viewRoom(roomId);
+        });
+    });
+
+    // Delete Room
+    document.querySelectorAll('.delete-btn').forEach(button => {
+        button.addEventListener('click', function () {
+            const roomId = this.getAttribute('data-id');
+            confirmDelete(roomId);
+        });
+    });
+
+    // Delete All Rooms
+    const deleteAllBtn = document.getElementById('deleteAllBtn');
+    if (deleteAllBtn) {
+        deleteAllBtn.addEventListener('click', confirmDeleteAll);
     }
 
-    init() {
-        this.bindEvents();
-        console.log('RoomManager initialized');
+    // Confirm Delete
+    const confirmDeleteBtn = document.getElementById('confirmDelete');
+    if (confirmDeleteBtn) {
+        confirmDeleteBtn.addEventListener('click', deleteRoom);
     }
 
-    bindEvents() {
-        console.log('Binding events...');
-
-        // View room
-        $(document).on('click', '.view-btn', (e) => {
-            console.log('View button clicked');
-            const roomId = $(e.currentTarget).data('id');
-            console.log('Room ID:', roomId);
-            this.viewRoom(roomId);
-        });
-
-        // Delete room
-        $(document).on('click', '.delete-btn', (e) => {
-            console.log('Delete button clicked');
-            const roomId = $(e.currentTarget).data('id');
-            console.log('Room ID:', roomId);
-            this.confirmDelete(roomId);
-        });
-
-        // Delete all rooms
-        $('#deleteAllBtn').on('click', () => {
-            console.log('Delete All button clicked');
-            this.confirmDeleteAll();
-        });
-
-        // Confirm delete
-        $('#confirmDelete').on('click', () => {
-            console.log('Confirm Delete clicked');
-            this.deleteRoom();
-        });
-
-        // Confirm delete all
-        $('#confirmDeleteAll').on('click', () => {
-            console.log('Confirm Delete All clicked');
-            this.deleteAllRooms();
-        });
-
-        console.log('All events bound successfully');
+    // Confirm Delete All
+    const confirmDeleteAllBtn = document.getElementById('confirmDeleteAll');
+    if (confirmDeleteAllBtn) {
+        confirmDeleteAllBtn.addEventListener('click', deleteAllRooms);
     }
 
-    async viewRoom(id) {
+    async function viewRoom(id) {
         try {
             console.log('Fetching room details for ID:', id);
 
-            const response = await $.ajax({
-                url: `/rooms/${id}`,
-                type: 'GET',
-                dataType: 'json'
+            const response = await fetch(`/rooms/${id}`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
             });
 
-            console.log('View room response:', response);
+            const data = await response.json();
+            console.log('View room response:', data);
 
-            if (response.success) {
-                this.displayRoomDetails(response.room);
+            if (data.success) {
+                displayRoomDetails(data.room);
             } else {
-                this.showAlert('Error loading room details: ' + (response.message || 'Unknown error'), 'error');
+                showAlert('Error loading room details: ' + (data.message || 'Unknown error'), 'error');
             }
         } catch (error) {
             console.error('Error in viewRoom:', error);
-            this.showAlert('Error loading room details. Please try again.', 'error');
+            showAlert('Error loading room details. Please try again.', 'error');
         }
     }
 
-    displayRoomDetails(room) {
+    function displayRoomDetails(room) {
         console.log('Displaying room details:', room);
 
-        const amenities = this.getAmenitiesList(room);
+        const amenities = getAmenitiesList(room);
         const images = room.Images ? (typeof room.Images === 'string' ? JSON.parse(room.Images) : room.Images) : [];
 
         let imagesHtml = '';
@@ -126,7 +118,7 @@ class RoomManager {
                         </tr>
                         <tr>
                             <th>Status:</th>
-                            <td><span class="badge ${this.getStatusBadgeClass(room.Status)}">${room.Status}</span></td>
+                            <td><span class="badge ${getStatusBadgeClass(room.Status)}">${room.Status}</span></td>
                         </tr>
                         <tr>
                             <th>Created:</th>
@@ -156,11 +148,11 @@ class RoomManager {
             ${imagesHtml}
         `;
 
-        $('#viewModalBody').html(content);
+        document.getElementById('viewModalBody').innerHTML = content;
         $('#viewModal').modal('show');
     }
 
-    getAmenitiesList(room) {
+    function getAmenitiesList(room) {
         const amenities = [];
         const amenityMap = {
             AC: 'Air Conditioning',
@@ -194,7 +186,7 @@ class RoomManager {
         `;
     }
 
-    getStatusBadgeClass(status) {
+    function getStatusBadgeClass(status) {
         const classes = {
             'Available': 'bg-success',
             'Occupied': 'bg-danger',
@@ -204,38 +196,40 @@ class RoomManager {
         return classes[status] || 'bg-secondary';
     }
 
-    confirmDelete(id) {
-        this.currentRoomId = id;
-        console.log('Setting currentRoomId for deletion:', this.currentRoomId);
+    function confirmDelete(id) {
+        currentRoomId = id;
+        console.log('Setting currentRoomId for deletion:', currentRoomId);
         $('#deleteModal').modal('show');
     }
 
-    confirmDeleteAll() {
+    function confirmDeleteAll() {
         $('#deleteAllModal').modal('show');
     }
 
-    async deleteRoom() {
-        if (!this.currentRoomId) {
+    async function deleteRoom() {
+        if (!currentRoomId) {
             console.error('No room ID set for deletion');
-            this.showAlert('Error: No room selected for deletion.', 'error');
+            showAlert('Error: No room selected for deletion.', 'error');
             return;
         }
 
-        console.log('Deleting room with ID:', this.currentRoomId);
+        console.log('Deleting room with ID:', currentRoomId);
 
         try {
-            const response = await $.ajax({
-                url: `/rooms/${this.currentRoomId}`,
-                type: 'DELETE',
-                data: {
-                    _token: this.getCsrfToken()
+            const response = await fetch(`/rooms/${currentRoomId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
                 }
             });
 
-            console.log('Delete response:', response);
+            const data = await response.json();
+            console.log('Delete response:', data);
 
-            if (response.success) {
-                this.showAlert(response.message, 'success');
+            if (data.success) {
+                showAlert(data.message, 'success');
                 $('#deleteModal').modal('hide');
 
                 // Reload the page after a short delay
@@ -243,30 +237,32 @@ class RoomManager {
                     location.reload();
                 }, 1500);
             } else {
-                this.showAlert(response.message, 'error');
+                showAlert(data.message, 'error');
             }
         } catch (error) {
             console.error('Delete error:', error);
-            this.showAlert('Error deleting room. Please try again.', 'error');
+            showAlert('Error deleting room. Please try again.', 'error');
         } finally {
-            this.currentRoomId = null;
+            currentRoomId = null;
         }
     }
 
-    async deleteAllRooms() {
+    async function deleteAllRooms() {
         try {
-            const response = await $.ajax({
-                url: '/rooms',
-                type: 'DELETE',
-                data: {
-                    _token: this.getCsrfToken()
+            const response = await fetch('/rooms', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
                 }
             });
 
-            console.log('Delete all response:', response);
+            const data = await response.json();
+            console.log('Delete all response:', data);
 
-            if (response.success) {
-                this.showAlert(response.message, 'success');
+            if (data.success) {
+                showAlert(data.message, 'success');
                 $('#deleteAllModal').modal('hide');
 
                 // Reload the page after a short delay
@@ -274,19 +270,15 @@ class RoomManager {
                     location.reload();
                 }, 1500);
             } else {
-                this.showAlert(response.message, 'error');
+                showAlert(data.message, 'error');
             }
         } catch (error) {
             console.error('Delete all error:', error);
-            this.showAlert('Error deleting all rooms. Please try again.', 'error');
+            showAlert('Error deleting all rooms. Please try again.', 'error');
         }
     }
 
-    getCsrfToken() {
-        return $('meta[name="csrf-token"]').attr('content');
-    }
-
-    showAlert(message, type = 'info') {
+    function showAlert(message, type = 'info') {
         const alertClass = {
             'success': 'alert-success',
             'error': 'alert-danger',
@@ -295,27 +287,26 @@ class RoomManager {
         }[type] || 'alert-info';
 
         // Remove existing alerts
-        $('.alert-dismissible').remove();
+        const existingAlerts = document.querySelectorAll('.alert-dismissible');
+        existingAlerts.forEach(alert => alert.remove());
 
-        const alert = $(`
+        const alert = `
             <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
                 ${message}
-                <button type="button" class="close" data-dismiss="alert">
-                    <span>&times;</span>
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-        `);
+        `;
 
-        $('.card-body').prepend(alert);
+        const cardBody = document.querySelector('.card-body');
+        cardBody.insertAdjacentHTML('afterbegin', alert);
 
         setTimeout(() => {
-            alert.alert('close');
+            const alertElement = document.querySelector('.alert-dismissible');
+            if (alertElement) {
+                alertElement.remove();
+            }
         }, 5000);
     }
-}
-
-// Initialize room manager when document is ready
-$(document).ready(function () {
-    console.log('Document ready, initializing RoomManager...');
-    window.roomManager = new RoomManager();
 });

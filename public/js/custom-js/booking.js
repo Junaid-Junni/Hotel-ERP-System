@@ -1,101 +1,123 @@
 // public/js/bookings.js
 
-class BookingManager {
-    constructor() {
-        this.currentBookingId = null;
-        this.init();
+document.addEventListener('DOMContentLoaded', function () {
+    console.log('Booking Manager initialized');
+
+    let currentBookingId = null;
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+    // View Booking
+    document.querySelectorAll('.view-btn').forEach(button => {
+        button.addEventListener('click', function () {
+            const bookingId = this.getAttribute('data-id');
+            viewBooking(bookingId);
+        });
+    });
+
+    // Delete Booking
+    document.querySelectorAll('.delete-btn').forEach(button => {
+        button.addEventListener('click', function () {
+            const bookingId = this.getAttribute('data-id');
+            confirmDelete(bookingId);
+        });
+    });
+
+    // Check-in Booking
+    document.querySelectorAll('.checkin-btn').forEach(button => {
+        button.addEventListener('click', function () {
+            const bookingId = this.getAttribute('data-id');
+            confirmCheckin(bookingId);
+        });
+    });
+
+    // Check-out Booking
+    document.querySelectorAll('.checkout-btn').forEach(button => {
+        button.addEventListener('click', function () {
+            const bookingId = this.getAttribute('data-id');
+            confirmCheckout(bookingId);
+        });
+    });
+
+    // Cancel Booking
+    document.querySelectorAll('.cancel-btn').forEach(button => {
+        button.addEventListener('click', function () {
+            const bookingId = this.getAttribute('data-id');
+            confirmCancel(bookingId);
+        });
+    });
+
+    // Delete All Bookings
+    const deleteAllBtn = document.getElementById('deleteAllBtn');
+    if (deleteAllBtn) {
+        deleteAllBtn.addEventListener('click', confirmDeleteAll);
     }
 
-    init() {
-        this.bindEvents();
+    // Confirm Delete
+    const confirmDeleteBtn = document.getElementById('confirmDelete');
+    if (confirmDeleteBtn) {
+        confirmDeleteBtn.addEventListener('click', deleteBooking);
     }
 
-    bindEvents() {
-        // View booking
-        $(document).on('click', '.view-btn', (e) => {
-            this.viewBooking($(e.currentTarget).data('id'));
-        });
-
-        // Delete booking
-        $(document).on('click', '.delete-btn', (e) => {
-            this.confirmDelete($(e.currentTarget).data('id'));
-        });
-
-        // Delete all bookings
-        $('#deleteAllBtn').on('click', () => {
-            this.confirmDeleteAll();
-        });
-
-        // Check in booking
-        $(document).on('click', '.checkin-btn', (e) => {
-            this.confirmCheckIn($(e.currentTarget).data('id'));
-        });
-
-        // Check out booking
-        $(document).on('click', '.checkout-btn', (e) => {
-            this.confirmCheckOut($(e.currentTarget).data('id'));
-        });
-
-        // Cancel booking
-        $(document).on('click', '.cancel-btn', (e) => {
-            this.confirmCancel($(e.currentTarget).data('id'));
-        });
-
-        // Add payment
-        $(document).on('click', '.payment-btn', (e) => {
-            this.showPaymentModal($(e.currentTarget).data('id'));
-        });
-
-        // Confirm actions
-        $('#confirmDelete').on('click', () => {
-            this.deleteBooking();
-        });
-
-        $('#confirmDeleteAll').on('click', () => {
-            this.deleteAllBookings();
-        });
-
-        $('#confirmCheckin').on('click', () => {
-            this.checkInBooking();
-        });
-
-        $('#confirmCheckout').on('click', () => {
-            this.checkOutBooking();
-        });
-
-        $('#confirmCancel').on('click', () => {
-            this.cancelBooking();
-        });
-
-        $('#confirmPayment').on('click', () => {
-            this.addPayment();
-        });
+    // Confirm Delete All
+    const confirmDeleteAllBtn = document.getElementById('confirmDeleteAll');
+    if (confirmDeleteAllBtn) {
+        confirmDeleteAllBtn.addEventListener('click', deleteAllBookings);
     }
 
-    async viewBooking(id) {
+    // Confirm Check-in
+    const confirmCheckinBtn = document.getElementById('confirmCheckin');
+    if (confirmCheckinBtn) {
+        confirmCheckinBtn.addEventListener('click', checkinBooking);
+    }
+
+    // Confirm Check-out
+    const confirmCheckoutBtn = document.getElementById('confirmCheckout');
+    if (confirmCheckoutBtn) {
+        confirmCheckoutBtn.addEventListener('click', checkoutBooking);
+    }
+
+    // Confirm Cancel
+    const confirmCancelBtn = document.getElementById('confirmCancel');
+    if (confirmCancelBtn) {
+        confirmCancelBtn.addEventListener('click', cancelBooking);
+    }
+
+    async function viewBooking(id) {
         try {
-            const response = await $.ajax({
-                url: `/bookings/${id}`,
-                type: 'GET'
+            console.log('Fetching booking details for ID:', id);
+
+            const response = await fetch(`/bookings/${id}`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
             });
 
-            if (response.success) {
-                this.displayBookingDetails(response.booking);
+            const data = await response.json();
+            console.log('View booking response:', data);
+
+            if (data.success) {
+                displayBookingDetails(data.booking);
             } else {
-                this.showAlert('Error loading booking details.', 'error');
+                showAlert('Error loading booking details: ' + (data.message || 'Unknown error'), 'error');
             }
         } catch (error) {
-            this.showAlert('Error loading booking details.', 'error');
+            console.error('Error in viewBooking:', error);
+            showAlert('Error loading booking details. Please try again.', 'error');
         }
     }
 
-    displayBookingDetails(booking) {
+    function displayBookingDetails(booking) {
+        console.log('Displaying booking details:', booking);
+
         const content = `
             <div class="row">
                 <div class="col-md-6">
-                    <table class="table table-bordered">
+                    <h6>Guest Information</h6>
+                    <table class="table table-bordered table-sm">
                         <tr>
-                            <th>Guest Name:</th>
+                            <th width="40%">Guest Name:</th>
                             <td>${booking.guest_name}</td>
                         </tr>
                         <tr>
@@ -110,16 +132,13 @@ class BookingManager {
                             <th>Address:</th>
                             <td>${booking.guest_address || 'N/A'}</td>
                         </tr>
-                        <tr>
-                            <th>Guests:</th>
-                            <td>${booking.adults} Adult${booking.adults > 1 ? 's' : ''}${booking.children > 0 ? ', ' + booking.children + ' Child' + (booking.children > 1 ? 'ren' : '') : ''}</td>
-                        </tr>
                     </table>
                 </div>
                 <div class="col-md-6">
-                    <table class="table table-bordered">
+                    <h6>Booking Details</h6>
+                    <table class="table table-bordered table-sm">
                         <tr>
-                            <th>Room:</th>
+                            <th width="40%">Room:</th>
                             <td>${booking.room.RoomNo} (${booking.room.Type})</td>
                         </tr>
                         <tr>
@@ -134,68 +153,100 @@ class BookingManager {
                             <th>Total Nights:</th>
                             <td>${booking.total_nights}</td>
                         </tr>
-                        <tr>
-                            <th>Total Amount:</th>
-                            <td>$${parseFloat(booking.total_amount).toFixed(2)}</td>
-                        </tr>
                     </table>
                 </div>
             </div>
-            <div class="row">
+            <div class="row mt-3">
                 <div class="col-md-6">
-                    <table class="table table-bordered">
+                    <h6>Occupancy</h6>
+                    <table class="table table-bordered table-sm">
                         <tr>
-                            <th>Status:</th>
-                            <td><span class="badge ${this.getStatusBadgeClass(booking.status)}">${booking.status}</span></td>
+                            <th width="40%">Adults:</th>
+                            <td>${booking.adults}</td>
                         </tr>
                         <tr>
-                            <th>Payment Status:</th>
-                            <td><span class="badge ${this.getPaymentStatusBadgeClass(booking.payment_status)}">${booking.payment_status}</span></td>
+                            <th>Children:</th>
+                            <td>${booking.children}</td>
+                        </tr>
+                        <tr>
+                            <th>Total Guests:</th>
+                            <td>${parseInt(booking.adults) + parseInt(booking.children)}</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <h6>Financial Information</h6>
+                    <table class="table table-bordered table-sm">
+                        <tr>
+                            <th width="40%">Total Amount:</th>
+                            <td>$${parseFloat(booking.total_amount).toFixed(2)}</td>
                         </tr>
                         <tr>
                             <th>Paid Amount:</th>
                             <td>$${parseFloat(booking.paid_amount).toFixed(2)}</td>
                         </tr>
                         <tr>
-                            <th>Balance:</th>
-                            <td>$${(parseFloat(booking.total_amount) - parseFloat(booking.paid_amount)).toFixed(2)}</td>
+                            <th>Remaining:</th>
+                            <td class="font-weight-bold">$${(parseFloat(booking.total_amount) - parseFloat(booking.paid_amount)).toFixed(2)}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <h6>Status Information</h6>
+                    <table class="table table-bordered table-sm">
+                        <tr>
+                            <th width="40%">Status:</th>
+                            <td><span class="badge ${getStatusBadgeClass(booking.status)}">${booking.status}</span></td>
+                        </tr>
+                        <tr>
+                            <th>Payment Status:</th>
+                            <td><span class="badge ${getPaymentStatusBadgeClass(booking.payment_status)}">${booking.payment_status}</span></td>
                         </tr>
                     </table>
                 </div>
                 <div class="col-md-6">
-                    <table class="table table-bordered">
+                    <h6>Dates</h6>
+                    <table class="table table-bordered table-sm">
                         <tr>
-                            <th>Created:</th>
+                            <th width="40%">Created:</th>
                             <td>${new Date(booking.created_at).toLocaleDateString()}</td>
                         </tr>
                         <tr>
-                            <th>Updated:</th>
+                            <th>Last Updated:</th>
                             <td>${new Date(booking.updated_at).toLocaleDateString()}</td>
                         </tr>
-                        ${booking.cancellation_reason ? `
-                        <tr>
-                            <th>Cancellation Reason:</th>
-                            <td>${booking.cancellation_reason}</td>
-                        </tr>
-                        ` : ''}
                     </table>
                 </div>
             </div>
             ${booking.special_requests ? `
             <div class="row mt-3">
-                <div class="col-md-12">
+                <div class="col-12">
                     <h6>Special Requests:</h6>
-                    <p>${booking.special_requests}</p>
+                    <div class="alert alert-light">
+                        ${booking.special_requests}
+                    </div>
+                </div>
+            </div>
+            ` : ''}
+            ${booking.cancellation_reason ? `
+            <div class="row mt-3">
+                <div class="col-12">
+                    <h6>Cancellation Reason:</h6>
+                    <div class="alert alert-warning">
+                        ${booking.cancellation_reason}
+                    </div>
                 </div>
             </div>
             ` : ''}
         `;
 
-        $('#viewModalBody').html(content);
+        document.getElementById('viewModalBody').innerHTML = content;
         $('#viewModal').modal('show');
     }
 
-    getStatusBadgeClass(status) {
+    function getStatusBadgeClass(status) {
         const classes = {
             'Confirmed': 'bg-success',
             'Checked In': 'bg-primary',
@@ -205,7 +256,7 @@ class BookingManager {
         return classes[status] || 'bg-secondary';
     }
 
-    getPaymentStatusBadgeClass(paymentStatus) {
+    function getPaymentStatusBadgeClass(paymentStatus) {
         const classes = {
             'Paid': 'bg-success',
             'Pending': 'bg-warning',
@@ -215,217 +266,210 @@ class BookingManager {
         return classes[paymentStatus] || 'bg-secondary';
     }
 
-    confirmDelete(id) {
-        this.currentBookingId = id;
+    function confirmDelete(id) {
+        currentBookingId = id;
+        console.log('Setting currentBookingId for deletion:', currentBookingId);
         $('#deleteModal').modal('show');
     }
 
-    confirmDeleteAll() {
+    function confirmDeleteAll() {
         $('#deleteAllModal').modal('show');
     }
 
-    confirmCheckIn(id) {
-        this.currentBookingId = id;
+    function confirmCheckin(id) {
+        currentBookingId = id;
         $('#checkinModal').modal('show');
     }
 
-    confirmCheckOut(id) {
-        this.currentBookingId = id;
+    function confirmCheckout(id) {
+        currentBookingId = id;
         $('#checkoutModal').modal('show');
     }
 
-    confirmCancel(id) {
-        this.currentBookingId = id;
+    function confirmCancel(id) {
+        currentBookingId = id;
         $('#cancelModal').modal('show');
     }
 
-    showPaymentModal(id) {
-        this.currentBookingId = id;
-        $('#paymentModal').modal('show');
-    }
+    async function deleteBooking() {
+        if (!currentBookingId) {
+            console.error('No booking ID set for deletion');
+            showAlert('Error: No booking selected for deletion.', 'error');
+            return;
+        }
 
-    async deleteBooking() {
-        if (!this.currentBookingId) return;
+        console.log('Deleting booking with ID:', currentBookingId);
 
         try {
-            const response = await $.ajax({
-                url: `/bookings/${this.currentBookingId}`,
-                type: 'DELETE',
-                data: {
-                    _token: $('meta[name="csrf-token"]').attr('content')
+            const response = await fetch(`/bookings/${currentBookingId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
                 }
             });
 
-            if (response.success) {
-                this.showAlert(response.message, 'success');
+            const data = await response.json();
+            console.log('Delete response:', data);
+
+            if (data.success) {
+                showAlert(data.message, 'success');
+                $('#deleteModal').modal('hide');
+
+                // Reload the page after a short delay
                 setTimeout(() => {
                     location.reload();
-                }, 1000);
+                }, 1500);
             } else {
-                this.showAlert(response.message, 'error');
+                showAlert(data.message, 'error');
             }
         } catch (error) {
-            this.showAlert('Error deleting booking.', 'error');
+            console.error('Delete error:', error);
+            showAlert('Error deleting booking. Please try again.', 'error');
         } finally {
-            $('#deleteModal').modal('hide');
-            this.currentBookingId = null;
+            currentBookingId = null;
         }
     }
 
-    async deleteAllBookings() {
+    async function deleteAllBookings() {
         try {
-            const response = await $.ajax({
-                url: '/bookings',
-                type: 'DELETE',
-                data: {
-                    _token: $('meta[name="csrf-token"]').attr('content')
+            const response = await fetch('/bookings', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
                 }
             });
 
-            if (response.success) {
-                this.showAlert(response.message, 'success');
+            const data = await response.json();
+            console.log('Delete all response:', data);
+
+            if (data.success) {
+                showAlert(data.message, 'success');
+                $('#deleteAllModal').modal('hide');
+
+                // Reload the page after a short delay
                 setTimeout(() => {
                     location.reload();
-                }, 1000);
+                }, 1500);
             } else {
-                this.showAlert(response.message, 'error');
+                showAlert(data.message, 'error');
             }
         } catch (error) {
-            this.showAlert('Error deleting all bookings.', 'error');
-        } finally {
-            $('#deleteAllModal').modal('hide');
+            console.error('Delete all error:', error);
+            showAlert('Error deleting all bookings. Please try again.', 'error');
         }
     }
 
-    async checkInBooking() {
-        if (!this.currentBookingId) return;
-
-        try {
-            const response = await $.ajax({
-                url: `/bookings/${this.currentBookingId}/checkin`,
-                type: 'POST',
-                data: {
-                    _token: $('meta[name="csrf-token"]').attr('content')
-                }
-            });
-
-            if (response.success) {
-                this.showAlert(response.message, 'success');
-                setTimeout(() => {
-                    location.reload();
-                }, 1000);
-            } else {
-                this.showAlert(response.message, 'error');
-            }
-        } catch (error) {
-            this.showAlert('Error checking in guest.', 'error');
-        } finally {
-            $('#checkinModal').modal('hide');
-            this.currentBookingId = null;
-        }
-    }
-
-    async checkOutBooking() {
-        if (!this.currentBookingId) return;
-
-        try {
-            const response = await $.ajax({
-                url: `/bookings/${this.currentBookingId}/checkout`,
-                type: 'POST',
-                data: {
-                    _token: $('meta[name="csrf-token"]').attr('content')
-                }
-            });
-
-            if (response.success) {
-                this.showAlert(response.message, 'success');
-                setTimeout(() => {
-                    location.reload();
-                }, 1000);
-            } else {
-                this.showAlert(response.message, 'error');
-            }
-        } catch (error) {
-            this.showAlert('Error checking out guest.', 'error');
-        } finally {
-            $('#checkoutModal').modal('hide');
-            this.currentBookingId = null;
-        }
-    }
-
-    async cancelBooking() {
-        if (!this.currentBookingId) return;
-
-        const reason = $('#cancellationReason').val();
-
-        try {
-            const response = await $.ajax({
-                url: `/bookings/${this.currentBookingId}/cancel`,
-                type: 'POST',
-                data: {
-                    _token: $('meta[name="csrf-token"]').attr('content'),
-                    reason: reason
-                }
-            });
-
-            if (response.success) {
-                this.showAlert(response.message, 'success');
-                setTimeout(() => {
-                    location.reload();
-                }, 1000);
-            } else {
-                this.showAlert(response.message, 'error');
-            }
-        } catch (error) {
-            this.showAlert('Error cancelling booking.', 'error');
-        } finally {
-            $('#cancelModal').modal('hide');
-            this.currentBookingId = null;
-            $('#cancellationReason').val('');
-        }
-    }
-
-    async addPayment() {
-        if (!this.currentBookingId) return;
-
-        const amount = $('#paymentAmount').val();
-        const paymentType = $('#paymentType').val();
-
-        if (!amount || amount <= 0) {
-            this.showAlert('Please enter a valid amount.', 'warning');
+    async function checkinBooking() {
+        if (!currentBookingId) {
+            showAlert('Error: No booking selected for check-in.', 'error');
             return;
         }
 
         try {
-            const response = await $.ajax({
-                url: `/bookings/${this.currentBookingId}/payment`,
-                type: 'POST',
-                data: {
-                    _token: $('meta[name="csrf-token"]').attr('content'),
-                    amount: amount,
-                    payment_type: paymentType
+            const response = await fetch(`/bookings/${currentBookingId}/checkin`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
                 }
             });
 
-            if (response.success) {
-                this.showAlert(response.message, 'success');
-                setTimeout(() => {
-                    location.reload();
-                }, 1000);
+            const data = await response.json();
+
+            if (data.success) {
+                showAlert(data.message, 'success');
+                $('#checkinModal').modal('hide');
+                setTimeout(() => location.reload(), 1500);
             } else {
-                this.showAlert(response.message, 'error');
+                showAlert(data.message, 'error');
             }
         } catch (error) {
-            this.showAlert('Error adding payment.', 'error');
+            console.error('Check-in error:', error);
+            showAlert('Error during check-in. Please try again.', 'error');
         } finally {
-            $('#paymentModal').modal('hide');
-            this.currentBookingId = null;
-            $('#paymentAmount').val('');
-            $('#paymentType').val('cash');
+            currentBookingId = null;
         }
     }
 
-    showAlert(message, type = 'info') {
+    async function checkoutBooking() {
+        if (!currentBookingId) {
+            showAlert('Error: No booking selected for check-out.', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/bookings/${currentBookingId}/checkout`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                showAlert(data.message, 'success');
+                $('#checkoutModal').modal('hide');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showAlert(data.message, 'error');
+            }
+        } catch (error) {
+            console.error('Check-out error:', error);
+            showAlert('Error during check-out. Please try again.', 'error');
+        } finally {
+            currentBookingId = null;
+        }
+    }
+
+    async function cancelBooking() {
+        if (!currentBookingId) {
+            showAlert('Error: No booking selected for cancellation.', 'error');
+            return;
+        }
+
+        const reason = document.getElementById('cancellationReason').value;
+        if (!reason) {
+            showAlert('Please provide a cancellation reason.', 'warning');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/bookings/${currentBookingId}/cancel`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ reason: reason })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                showAlert(data.message, 'success');
+                $('#cancelModal').modal('hide');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showAlert(data.message, 'error');
+            }
+        } catch (error) {
+            console.error('Cancel error:', error);
+            showAlert('Error cancelling booking. Please try again.', 'error');
+        } finally {
+            currentBookingId = null;
+        }
+    }
+
+    function showAlert(message, type = 'info') {
         const alertClass = {
             'success': 'alert-success',
             'error': 'alert-danger',
@@ -434,26 +478,26 @@ class BookingManager {
         }[type] || 'alert-info';
 
         // Remove existing alerts
-        $('.alert-dismissible').remove();
+        const existingAlerts = document.querySelectorAll('.alert-dismissible');
+        existingAlerts.forEach(alert => alert.remove());
 
-        const alert = $(`
+        const alert = `
             <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
                 ${message}
-                <button type="button" class="close" data-dismiss="alert">
-                    <span>&times;</span>
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-        `);
+        `;
 
-        $('.card-body').prepend(alert);
+        const cardBody = document.querySelector('.card-body');
+        cardBody.insertAdjacentHTML('afterbegin', alert);
 
         setTimeout(() => {
-            alert.alert('close');
+            const alertElement = document.querySelector('.alert-dismissible');
+            if (alertElement) {
+                alertElement.remove();
+            }
         }, 5000);
     }
-}
-
-// Initialize booking manager when document is ready
-$(document).ready(function () {
-    window.bookingManager = new BookingManager();
 });
