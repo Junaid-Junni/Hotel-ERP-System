@@ -39,7 +39,7 @@ Route::middleware(['auth'])->group(function () {
     |--------------------------------------------------------------------------
     */
     Route::resource('rooms', RoomController::class);
-    Route::delete('/rooms', [RoomController::class, 'destroyAll'])->name('rooms.destroy.all');
+    Route::delete('rooms/delete-all', [RoomController::class, 'destroyAll'])->name('rooms.destroy.all');
 
     Route::prefix('rooms/trash')->group(function () {
         Route::get('/', [RoomController::class, 'trashIndex'])->name('rooms.trash.index');
@@ -85,7 +85,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/', [TransactionController::class, 'index'])->name('index');
         Route::get('/create', [TransactionController::class, 'create'])->name('create');
         Route::post('/', [TransactionController::class, 'store'])->name('store');
-        Route::get('/{id}', [TransactionController::class, 'show'])->name('show');
+        Route::get('/{id}', [TransactionController::class, 'show'])->name('transactions.show');
         Route::get('/{id}/edit', [TransactionController::class, 'edit'])->name('edit');
         Route::put('/{id}', [TransactionController::class, 'update'])->name('update');
         Route::delete('/{id}', [TransactionController::class, 'destroy'])->name('destroy');
@@ -142,28 +142,32 @@ Route::middleware(['auth'])->group(function () {
     | Housekeeping Routes
     |--------------------------------------------------------------------------
     */
-    Route::prefix('housekeeping')->name('housekeeping.')->group(function () {
-        Route::get('/', [HousekeepingController::class, 'index'])->name('index');
-        Route::get('/create', [HousekeepingController::class, 'create'])->name('create');
-        Route::post('/', [HousekeepingController::class, 'store'])->name('store');
+    // Housekeeping Routes
+    Route::prefix('housekeeping')->group(function () {
+        // Main CRUD routes
+        Route::get('/', [HousekeepingController::class, 'index'])->name('housekeeping.index');
+        Route::get('/create', [HousekeepingController::class, 'create'])->name('housekeeping.create');
+        Route::post('/', [HousekeepingController::class, 'store'])->name('housekeeping.store');
+        Route::get('/{housekeeping}/edit', [HousekeepingController::class, 'edit'])->name('housekeeping.edit');
+        Route::put('/{housekeeping}', [HousekeepingController::class, 'update'])->name('housekeeping.update');
+        Route::get('/{housekeeping}', [HousekeepingController::class, 'show'])->name('housekeeping.show');
 
-        Route::get('/dashboard', [HousekeepingController::class, 'dashboard'])->name('dashboard');
-        Route::get('/calendar', [HousekeepingController::class, 'calendar'])->name('calendar');
-        Route::get('/data/get', [HousekeepingController::class, 'getTasks'])->name('data.get');
+        // Delete routes
+        Route::delete('/{housekeeping}', [HousekeepingController::class, 'destroy'])->name('housekeeping.destroy');
 
-        Route::get('/{id}', [HousekeepingController::class, 'show'])->name('show');
-        Route::get('/{id}/edit', [HousekeepingController::class, 'edit'])->name('edit');
-        Route::put('/{id}', [HousekeepingController::class, 'update'])->name('update');
-        Route::delete('/{id}', [HousekeepingController::class, 'destroy'])->name('destroy');
+        // Status update routes
+        Route::post('/{housekeeping}/in-progress', [HousekeepingController::class, 'markInProgress'])->name('housekeeping.in-progress');
+        Route::post('/{housekeeping}/complete', [HousekeepingController::class, 'markCompleted'])->name('housekeeping.complete');
+        Route::post('/{housekeeping}/cancel', [HousekeepingController::class, 'cancel'])->name('housekeeping.cancel');
 
-        Route::post('/{id}/start', [HousekeepingController::class, 'startTask'])->name('start');
-        Route::post('/{id}/complete', [HousekeepingController::class, 'completeTask'])->name('complete');
-        Route::post('/{id}/cancel', [HousekeepingController::class, 'cancelTask'])->name('cancel');
-        Route::delete('/', [HousekeepingController::class, 'deleteAll'])->name('deleteAll');
-
-        Route::get('/trash/index', [HousekeepingController::class, 'trash'])->name('trash.index');
-        Route::post('/trash/{id}/restore', [HousekeepingController::class, 'restore'])->name('trash.restore');
-        Route::delete('/trash/{id}/force', [HousekeepingController::class, 'forceDelete'])->name('trash.forceDelete');
+        // Dashboard and reports
+        Route::get('/dashboard', [HousekeepingController::class, 'dashboard'])->name('housekeeping.dashboard');
+        Route::get('/tasks/{date}', [HousekeepingController::class, 'getTasksByDate'])->name('housekeeping.tasks-by-date');
+        // Trash management routes
+        Route::get('/trash/index', [HousekeepingController::class, 'trashIndex'])->name('housekeeping.trash.index');
+        Route::post('/trash/{housekeeping}/restore', [HousekeepingController::class, 'trashRestore'])->name('housekeeping.trash.restore');
+        Route::delete('/trash/{housekeeping}/destroy', [HousekeepingController::class, 'trashDestroy'])->name('housekeeping.trash.destroy');
+        Route::delete('/trash/empty', [HousekeepingController::class, 'trashEmpty'])->name('housekeeping.trash.empty');
     });
 
     /*

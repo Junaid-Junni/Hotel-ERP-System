@@ -2,260 +2,312 @@
 
 namespace App\Http\Controllers;
 
-use Yajra\DataTables\DataTables;
-use Illuminate\Http\Request;
 use App\Models\Transaction;
+use App\Models\Employee;
 use App\Models\Booking;
-use Exception;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class TransactionController extends Controller
 {
     public function index()
     {
-        $Transactions = Transaction::all();
+        $transactions = Transaction::with(['employee', 'booking'])
+            ->latest()
+            ->paginate(10);
 
-        // Calculate totals
-        $totalIncome = Transaction::income()->sum('amount');
-        $totalExpense = Transaction::expense()->sum('amount');
-        $netBalance = $totalIncome - $totalExpense;
-
-        // Monthly totals
-        $monthlyIncome = Transaction::income()->thisMonth()->sum('amount');
-        $monthlyExpense = Transaction::expense()->thisMonth()->sum('amount');
-        $monthlyNet = $monthlyIncome - $monthlyExpense;
-
-        if (request()->ajax()) {
-            return DataTables::of($this->dtQuery())
-                ->addColumn('action', 'transactions.dt_buttons')
-                ->make(true);
-        }
-
-        return view('transactions.index', compact(
-            'Transactions',
-            'totalIncome',
-            'totalExpense',
-            'netBalance',
-            'monthlyIncome',
-            'monthlyExpense',
-            'monthlyNet'
-        ));
-    }
-
-    public function dtQuery()
-    {
-        return Transaction::with('booking')->select('transactions.*');
+        return view('transactions.index', compact('transactions'));
     }
 
     public function create()
     {
-        $bookings = Booking::where('payment_status', '!=', 'Paid')->get();
-        $categories = [
-            'Income' => [
-                'Room Booking',
-                'Food & Beverage',
-                'Laundry Service',
-                'Other Services',
-                'Miscellaneous Income'
-            ],
-            'Expense' => [
-                'Staff Salary',
-                'Utilities',
-                'Maintenance',
-                'Supplies',
-                'Marketing',
-                'Insurance',
-                'Taxes',
-                'Other Expenses'
-            ]
-        ];
+        $employees = Employee::where('status', 'Active')->get();
+        $bookings = Booking::whereIn('status', ['Confirmed', 'Checked In'])->get();
 
-        return view('transactions.create', compact('bookings', 'categories'));
+        return view('transactions.create', compact('employees', 'bookings'));
     }
 
     public function store(Request $request)
     {
+        $validated = $request->validate([
+            'type' => 'required|in:income,expense',
+            'category' => 'required|string|max:255',
+            'amount' => 'required|numeric|min:0',
+            'transaction_date' => 'required|date',
+            'description' => 'nullable|string',
+            'payment_method' => 'required|string|max:255',
+            'reference_number' => 'nullable|string|max:255',
+            'employee_id' => 'nullable|exists:employees,id',
+            'booking_id' => 'nullable|exists:bookings,id',
+            'status' => 'required|in:pending,completed,cancelled'
+        ]);
+
         try {
             DB::beginTransaction();
 
-            $request->validate([
-                'type' => 'required|in:Income,Expense',
-                'category' => 'required|string|max:255',
-                'description' => 'required|string|max:500',
-                'amount' => 'required|numeric|min:0',
-                'transaction_date' => 'required|date',
-                'payment_method' => 'required|string',
-                'booking_id' => 'nullable|exists:bookings,id',
-                'notes' => 'nullable|string'
-            ]);
+            $transaction = Transaction::create($validated);
 
-            Transaction::create($request->all());
+            // If linked to booking and it's income, update booking paid amount
+            if ($transaction->booking_id && $transaction->type == 'income' && $transaction->status == 'completed') {
+                $booking = Booking::find($transaction->booking_id);
+                $booking->increment('paid_amount', $transaction->amount);
+
+                // Update payment status based on paid amount
+                if ($booking->paid_amount >= $booking->total_amount) {
+                    $booking->update(['payment_status' => 'Paid']);
+                } elseif ($booking->paid_amount > 0) {
+                    $booking->update(['payment_status' => 'Partial']);
+                }
+            }
 
             DB::commit();
 
             return redirect()->route('transactions.index')
-                ->with('success', 'Transaction added successfully!');
-        } catch (Exception $error) {
+                ->with('success', 'Transaction created successfully.');
+        } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', $error->getMessage())->withInput();
+            return back()->with('error', 'Failed to create transaction: ' . $e->getMessage());
         }
     }
 
     public function show($id)
     {
-        $Transaction = Transaction::with('booking')->find($id);
-        return view('transactions.show', compact('Transaction'));
+        try {
+            $transaction = Transaction::with(['employee', 'booking.room'])
+                ->findOrFail($id);
+
+            return response()->json([
+                'success' => true,
+                'transaction' => $transaction
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Transaction not found.'
+            ], 404);
+        }
     }
 
-    public function edit($id)
+    public function edit(Transaction $transaction)
     {
-        $Transaction = Transaction::find($id);
-        $bookings = Booking::where('payment_status', '!=', 'Paid')->get();
-        $categories = [
-            'Income' => [
-                'Room Booking',
-                'Food & Beverage',
-                'Laundry Service',
-                'Other Services',
-                'Miscellaneous Income'
-            ],
-            'Expense' => [
-                'Staff Salary',
-                'Utilities',
-                'Maintenance',
-                'Supplies',
-                'Marketing',
-                'Insurance',
-                'Taxes',
-                'Other Expenses'
-            ]
-        ];
+        $employees = Employee::where('status', 'Active')->get();
+        $bookings = Booking::whereIn('status', ['Confirmed', 'Checked In'])->get();
 
-        return view('transactions.edit', compact('Transaction', 'bookings', 'categories'));
+        return view('transactions.edit', compact('transaction', 'employees', 'bookings'));
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, Transaction $transaction)
     {
+        $validated = $request->validate([
+            'type' => 'required|in:income,expense',
+            'category' => 'required|string|max:255',
+            'amount' => 'required|numeric|min:0',
+            'transaction_date' => 'required|date',
+            'description' => 'nullable|string',
+            'payment_method' => 'required|string|max:255',
+            'reference_number' => 'nullable|string|max:255',
+            'employee_id' => 'nullable|exists:employees,id',
+            'booking_id' => 'nullable|exists:bookings,id',
+            'status' => 'required|in:pending,completed,cancelled'
+        ]);
+
         try {
             DB::beginTransaction();
 
-            $request->validate([
-                'type' => 'required|in:Income,Expense',
-                'category' => 'required|string|max:255',
-                'description' => 'required|string|max:500',
-                'amount' => 'required|numeric|min:0',
-                'transaction_date' => 'required|date',
-                'payment_method' => 'required|string',
-                'booking_id' => 'nullable|exists:bookings,id',
-                'notes' => 'nullable|string'
-            ]);
+            // Handle booking payment adjustments if amount or type changed
+            if ($transaction->booking_id && $transaction->type == 'income' && $transaction->status == 'completed') {
+                $oldAmount = $transaction->amount;
+                $booking = Booking::find($transaction->booking_id);
+                $booking->decrement('paid_amount', $oldAmount);
+            }
 
-            $transaction = Transaction::find($id);
-            $transaction->update($request->all());
+            $transaction->update($validated);
+
+            // Update booking paid amount for new transaction
+            if ($transaction->booking_id && $transaction->type == 'income' && $transaction->status == 'completed') {
+                $booking = Booking::find($transaction->booking_id);
+                $booking->increment('paid_amount', $transaction->amount);
+
+                if ($booking->paid_amount >= $booking->total_amount) {
+                    $booking->update(['payment_status' => 'Paid']);
+                } elseif ($booking->paid_amount > 0) {
+                    $booking->update(['payment_status' => 'Partial']);
+                } else {
+                    $booking->update(['payment_status' => 'Pending']);
+                }
+            }
 
             DB::commit();
 
             return redirect()->route('transactions.index')
-                ->with('success', 'Transaction updated successfully!');
-        } catch (Exception $error) {
+                ->with('success', 'Transaction updated successfully.');
+        } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', $error->getMessage())->withInput();
+            return back()->with('error', 'Failed to update transaction: ' . $e->getMessage());
         }
     }
 
-    public function destroy($id)
+    public function destroy(Transaction $transaction)
     {
-        Transaction::find($id)->delete();
-        return back()->with('success', 'Transaction moved to trash successfully!');
+        try {
+            DB::beginTransaction();
+
+            // Reverse booking payment if this was an income transaction
+            if ($transaction->booking_id && $transaction->type == 'income' && $transaction->status == 'completed') {
+                $booking = Booking::find($transaction->booking_id);
+                $booking->decrement('paid_amount', $transaction->amount);
+
+                // Recalculate payment status
+                if ($booking->paid_amount <= 0) {
+                    $booking->update(['payment_status' => 'Pending']);
+                } elseif ($booking->paid_amount < $booking->total_amount) {
+                    $booking->update(['payment_status' => 'Partial']);
+                }
+            }
+
+            $transaction->delete();
+
+            DB::commit();
+
+            return redirect()->route('transactions.index')
+                ->with('success', 'Transaction moved to trash successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Failed to delete transaction: ' . $e->getMessage());
+        }
     }
 
     public function trash()
     {
-        $Transactions = Transaction::onlyTrashed()->with('booking')->get();
-        return view('transactions.trash', compact('Transactions'));
+        $trashedTransactions = Transaction::onlyTrashed()
+            ->with(['employee', 'booking'])
+            ->latest()
+            ->get();
+
+        return view('transactions.trash', compact('trashedTransactions'));
     }
 
     public function restore($id)
     {
-        $transaction = Transaction::withTrashed()->find($id);
-        $transaction->restore();
-        return back()->with('success', 'Transaction restored successfully!');
+        try {
+            DB::beginTransaction();
+
+            $transaction = Transaction::onlyTrashed()->findOrFail($id);
+            $transaction->restore();
+
+            // Restore booking payment if this was an income transaction
+            if ($transaction->booking_id && $transaction->type == 'income' && $transaction->status == 'completed') {
+                $booking = Booking::find($transaction->booking_id);
+                $booking->increment('paid_amount', $transaction->amount);
+
+                if ($booking->paid_amount >= $booking->total_amount) {
+                    $booking->update(['payment_status' => 'Paid']);
+                } elseif ($booking->paid_amount > 0) {
+                    $booking->update(['payment_status' => 'Partial']);
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Transaction restored successfully.'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to restore transaction: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function forceDelete($id)
     {
-        $transaction = Transaction::withTrashed()->find($id);
-        $transaction->forceDelete();
-        return back()->with('success', 'Transaction permanently deleted!');
+        try {
+            $transaction = Transaction::onlyTrashed()->findOrFail($id);
+            $transaction->forceDelete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Transaction permanently deleted.'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete transaction: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function emptyTrash()
     {
-        Transaction::onlyTrashed()->forceDelete();
-        return back()->with('success', 'Trash emptied successfully!');
+        try {
+            $trashedCount = Transaction::onlyTrashed()->count();
+            Transaction::onlyTrashed()->forceDelete();
+
+            return response()->json([
+                'success' => true,
+                'message' => "Successfully emptied trash. {$trashedCount} transactions permanently deleted."
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to empty trash: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
-    public function incomeReport()
+    public function reports()
     {
-        $incomeByCategory = Transaction::income()
-            ->select('category', DB::raw('SUM(amount) as total'))
+        return view('transactions.reports');
+    }
+
+    public function getReportData(Request $request)
+    {
+        $request->validate([
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+            'type' => 'nullable|in:income,expense'
+        ]);
+
+        $query = Transaction::completed()
+            ->dateRange($request->start_date, $request->end_date);
+
+        if ($request->type) {
+            $query->where('type', $request->type);
+        }
+
+        $transactions = $query->with(['employee', 'booking'])
+            ->get();
+
+        $totalIncome = $transactions->where('type', 'income')->sum('amount');
+        $totalExpense = $transactions->where('type', 'expense')->sum('amount');
+        $netProfit = $totalIncome - $totalExpense;
+
+        // Category-wise breakdown
+        $incomeByCategory = $transactions->where('type', 'income')
             ->groupBy('category')
-            ->get();
+            ->map(function ($items) {
+                return $items->sum('amount');
+            });
 
-        $monthlyIncome = Transaction::income()
-            ->select(DB::raw('YEAR(transaction_date) as year, MONTH(transaction_date) as month, SUM(amount) as total'))
-            ->groupBy('year', 'month')
-            ->orderBy('year', 'desc')
-            ->orderBy('month', 'desc')
-            ->get();
-
-        $totalIncome = $incomeByCategory->sum('total');
-
-        return view('transactions.income-report', compact('incomeByCategory', 'monthlyIncome', 'totalIncome'));
-    }
-
-    public function expenseReport()
-    {
-        $expenseByCategory = Transaction::expense()
-            ->select('category', DB::raw('SUM(amount) as total'))
+        $expenseByCategory = $transactions->where('type', 'expense')
             ->groupBy('category')
-            ->get();
+            ->map(function ($items) {
+                return $items->sum('amount');
+            });
 
-        $monthlyExpense = Transaction::expense()
-            ->select(DB::raw('YEAR(transaction_date) as year, MONTH(transaction_date) as month, SUM(amount) as total'))
-            ->groupBy('year', 'month')
-            ->orderBy('year', 'desc')
-            ->orderBy('month', 'desc')
-            ->get();
-
-        $totalExpense = $expenseByCategory->sum('total');
-
-        return view('transactions.expense-report', compact('expenseByCategory', 'monthlyExpense', 'totalExpense'));
-    }
-
-    public function financialSummary()
-    {
-        $currentMonthIncome = Transaction::income()->thisMonth()->sum('amount');
-        $currentMonthExpense = Transaction::expense()->thisMonth()->sum('amount');
-        $currentMonthNet = $currentMonthIncome - $currentMonthExpense;
-
-        $totalIncome = Transaction::income()->sum('amount');
-        $totalExpense = Transaction::expense()->sum('amount');
-        $totalNet = $totalIncome - $totalExpense;
-
-        $recentTransactions = Transaction::with('booking')
-            ->orderBy('created_at', 'desc')
-            ->limit(10)
-            ->get();
-
-        return view('transactions.financial-summary', compact(
-            'currentMonthIncome',
-            'currentMonthExpense',
-            'currentMonthNet',
-            'totalIncome',
-            'totalExpense',
-            'totalNet',
-            'recentTransactions'
-        ));
+        return response()->json([
+            'transactions' => $transactions,
+            'summary' => [
+                'total_income' => $totalIncome,
+                'total_expense' => $totalExpense,
+                'net_profit' => $netProfit,
+                'transaction_count' => $transactions->count()
+            ],
+            'income_by_category' => $incomeByCategory,
+            'expense_by_category' => $expenseByCategory
+        ]);
     }
 }

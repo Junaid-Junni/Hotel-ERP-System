@@ -30,24 +30,6 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="info-box">
-                    <span class="info-box-icon bg-indigo"><i class="fa-solid fa-money-bill-trend-up"></i></span>
-                    <div class="info-box-content">
-                        <span class="info-box-text">TotalDeposit</span>
-                        {{-- <span class="info-box-number counter">{{ $TotalDeposit }}</span> --}}
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="info-box">
-                    <span class="info-box-icon bg-navy"><i class="fa-solid fa-money-bill-transfer"></i></span>
-                    <div class="info-box-content">
-                        <span class="info-box-text">TotalWithdraw</span>
-                        {{-- <span class="info-box-number counter">{{ $TotalWithdraw }}</span> --}}
-                    </div>
-                </div>
-            </div>
         </div>
         <div class="row">
             <div class="col-md-4">
@@ -88,48 +70,6 @@
                     </div>
                     <div class="icon">
                         <i class="fa-solid fa-people-roof"></i>
-                    </div>
-                    <a href="#" class="small-box-footer">
-                        More info <i class="fas fa-arrow-circle-right"></i>
-                    </a>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="small-box bg-indigo">
-                    <div class="inner">
-                        {{-- <h3 class="counter">{{ $TotalGuest }}</h3> --}}
-                        <p>Total Guest</p>
-                    </div>
-                    <div class="icon">
-                       <i class="fa-solid fa-person-walking-luggage"></i>
-                    </div>
-                    <a href="#" class="small-box-footer">
-                        More info <i class="fas fa-arrow-circle-right"></i>
-                    </a>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="small-box bg-orange">
-                    <div class="inner">
-                        {{-- <h3 class="counter">{{ $TotalBank }}</h3> --}}
-                        <p>Total Bank</p>
-                    </div>
-                    <div class="icon">
-                       <i class="fa-solid fa-building-columns"></i>
-                    </div>
-                    <a href="#" class="small-box-footer">
-                        More info <i class="fas fa-arrow-circle-right"></i>
-                    </a>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="small-box bg-fuchsia">
-                    <div class="inner">
-                        {{-- <h3 class="counter">{{ $TotalAccountNo }}</h3> --}}
-                        <p> Total AccountNo </p>
-                    </div>
-                    <div class="icon">
-                       <i class="fa-solid fa-money-check-dollar"></i>
                     </div>
                     <a href="#" class="small-box-footer">
                         More info <i class="fas fa-arrow-circle-right"></i>

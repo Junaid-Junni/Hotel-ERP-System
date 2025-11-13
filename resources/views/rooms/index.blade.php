@@ -18,7 +18,7 @@
                             <button class="btn btn-danger" id="deleteAllBtn">
                                 <i class="fa fa-trash"></i> Delete All
                             </button>
-                            <a href="{{ route('rooms.trash.index') }}" class="btn btn-secondary">
+                            <a href="{{ route('rooms.trash.empty') }}" class="btn btn-secondary">
                                 <i class="fa fa-trash-alt"></i> View Trash
                             </a>
                         </div>

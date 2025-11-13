@@ -1,124 +1,192 @@
 // public/js/housekeeping.js
 
-class HousekeepingManager {
-    constructor() {
-        this.currentTaskId = null;
-        this.init();
+document.addEventListener('DOMContentLoaded', function () {
+    console.log('Housekeeping Manager initialized');
+
+    let currentTaskId = null;
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+    // View Task
+    document.querySelectorAll('.view-btn').forEach(button => {
+        button.addEventListener('click', function () {
+            const taskId = this.getAttribute('data-id');
+            viewTask(taskId);
+        });
+    });
+
+    // Delete Task
+    document.querySelectorAll('.delete-btn').forEach(button => {
+        button.addEventListener('click', function () {
+            const taskId = this.getAttribute('data-id');
+            confirmDelete(taskId);
+        });
+    });
+
+    // Mark In Progress
+    document.querySelectorAll('.progress-btn').forEach(button => {
+        button.addEventListener('click', function () {
+            const taskId = this.getAttribute('data-id');
+            confirmProgress(taskId);
+        });
+    });
+
+    // Mark Complete
+    document.querySelectorAll('.complete-btn').forEach(button => {
+        button.addEventListener('click', function () {
+            const taskId = this.getAttribute('data-id');
+            confirmComplete(taskId);
+        });
+    });
+
+    // Cancel Task
+    document.querySelectorAll('.cancel-btn').forEach(button => {
+        button.addEventListener('click', function () {
+            const taskId = this.getAttribute('data-id');
+            confirmCancel(taskId);
+        });
+    });
+
+    // Confirm Delete
+    const confirmDeleteBtn = document.getElementById('confirmDelete');
+    if (confirmDeleteBtn) {
+        confirmDeleteBtn.addEventListener('click', deleteTask);
     }
 
-    init() {
-        this.bindEvents();
+    // Confirm Progress
+    const confirmProgressBtn = document.getElementById('confirmProgress');
+    if (confirmProgressBtn) {
+        confirmProgressBtn.addEventListener('click', markInProgress);
     }
 
-    bindEvents() {
-        // View task
-        $(document).on('click', '.view-btn', (e) => {
-            this.viewTask($(e.currentTarget).data('id'));
-        });
-
-        // Delete task
-        $(document).on('click', '.delete-btn', (e) => {
-            this.confirmDelete($(e.currentTarget).data('id'));
-        });
-
-        // Delete all tasks
-        $('#deleteAllBtn').on('click', () => {
-            this.confirmDeleteAll();
-        });
-
-        // Start task
-        $(document).on('click', '.start-btn', (e) => {
-            this.confirmStart($(e.currentTarget).data('id'));
-        });
-
-        // Complete task
-        $(document).on('click', '.complete-btn', (e) => {
-            this.showCompleteModal($(e.currentTarget).data('id'));
-        });
-
-        // Cancel task
-        $(document).on('click', '.cancel-btn', (e) => {
-            this.showCancelModal($(e.currentTarget).data('id'));
-        });
-
-        // Confirm actions
-        $('#confirmDelete').on('click', () => {
-            this.deleteTask();
-        });
-
-        $('#confirmDeleteAll').on('click', () => {
-            this.deleteAllTasks();
-        });
-
-        $('#confirmStart').on('click', () => {
-            this.startTask();
-        });
-
-        $('#confirmComplete').on('click', () => {
-            this.completeTask();
-        });
-
-        $('#confirmCancel').on('click', () => {
-            this.cancelTask();
-        });
+    // Confirm Complete
+    const confirmCompleteBtn = document.getElementById('confirmComplete');
+    if (confirmCompleteBtn) {
+        confirmCompleteBtn.addEventListener('click', markCompleted);
     }
 
-    async viewTask(id) {
+    // Confirm Cancel
+    const confirmCancelBtn = document.getElementById('confirmCancel');
+    if (confirmCancelBtn) {
+        confirmCancelBtn.addEventListener('click', cancelTask);
+    }
+
+    async function viewTask(id) {
         try {
-            const response = await $.ajax({
-                url: `/housekeeping/${id}`,
-                type: 'GET'
+            console.log('Fetching task details for ID:', id);
+
+            const response = await fetch(`/housekeeping/${id}`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
             });
 
-            if (response.success) {
-                this.displayTaskDetails(response.task);
+            const data = await response.json();
+            console.log('View task response:', data);
+
+            if (data.success) {
+                displayTaskDetails(data.housekeeping);
             } else {
-                this.showAlert('Error loading task details.', 'error');
+                showAlert('Error loading task details: ' + (data.message || 'Unknown error'), 'error');
             }
         } catch (error) {
-            this.showAlert('Error loading task details.', 'error');
+            console.error('Error in viewTask:', error);
+            showAlert('Error loading task details. Please try again.', 'error');
         }
     }
 
-    displayTaskDetails(task) {
-        const startedAt = task.started_at ? new Date(task.started_at).toLocaleString() : 'Not started';
-        const completedAt = task.completed_at ? new Date(task.completed_at).toLocaleString() : 'Not completed';
-        const duration = task.actual_minutes ? task.actual_minutes + ' minutes' : 'N/A';
+    function displayTaskDetails(task) {
+        console.log('Displaying task details:', task);
+
+        const tasksList = task.tasks && task.tasks.length > 0
+            ? task.tasks.map(t => `<li>${t}</li>`).join('')
+            : '<li class="text-muted">No tasks specified</li>';
+
+        const startedAt = task.started_at
+            ? new Date(task.started_at).toLocaleString()
+            : 'Not started';
+
+        const completedAt = task.completed_at
+            ? new Date(task.completed_at).toLocaleString()
+            : 'Not completed';
+
+        const qualityRating = task.quality_rating
+            ? `${task.quality_rating}/5 ${'★'.repeat(task.quality_rating)}${'☆'.repeat(5 - task.quality_rating)}`
+            : 'Not rated';
 
         const content = `
             <div class="row">
                 <div class="col-md-6">
-                    <table class="table table-bordered">
+                    <h6>Room Information</h6>
+                    <table class="table table-bordered table-sm">
                         <tr>
-                            <th>Room:</th>
-                            <td>${task.room.RoomNo} (${task.room.Type}) - Floor ${task.room.Floor}</td>
+                            <th width="40%">Room Number:</th>
+                            <td>${task.room.RoomNo}</td>
                         </tr>
                         <tr>
-                            <th>Task Type:</th>
-                            <td>${task.task_type}</td>
+                            <th>Room Type:</th>
+                            <td>${task.room.Type}</td>
                         </tr>
                         <tr>
-                            <th>Assigned To:</th>
-                            <td>${task.assigned_employee.first_name} ${task.assigned_employee.last_name} (${task.assigned_employee.employee_id})</td>
+                            <th>Floor:</th>
+                            <td>${task.room.Floor}</td>
                         </tr>
                         <tr>
-                            <th>Priority:</th>
-                            <td><span class="badge ${this.getPriorityBadgeClass(task.priority)}">${task.priority}</span></td>
-                        </tr>
-                        <tr>
-                            <th>Status:</th>
-                            <td><span class="badge ${this.getStatusBadgeClass(task.status)}">${task.status}</span></td>
+                            <th>Room Status:</th>
+                            <td><span class="badge badge-secondary">${task.room.Status}</span></td>
                         </tr>
                     </table>
                 </div>
                 <div class="col-md-6">
-                    <table class="table table-bordered">
+                    <h6>Housekeeper Information</h6>
+                    <table class="table table-bordered table-sm">
                         <tr>
-                            <th>Scheduled Date:</th>
-                            <td>${new Date(task.scheduled_date).toLocaleString()}</td>
+                            <th width="40%">Name:</th>
+                            <td>${task.employee.first_name} ${task.employee.last_name}</td>
                         </tr>
                         <tr>
-                            <th>Started At:</th>
+                            <th>Employee ID:</th>
+                            <td>${task.employee.employee_id}</td>
+                        </tr>
+                        <tr>
+                            <th>Position:</th>
+                            <td>${task.employee.position}</td>
+                        </tr>
+                        <tr>
+                            <th>Department:</th>
+                            <td>${task.employee.department}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <h6>Cleaning Details</h6>
+                    <table class="table table-bordered table-sm">
+                        <tr>
+                            <th width="40%">Date & Time:</th>
+                            <td>${task.formatted_cleaning_date} at ${task.formatted_cleaning_time}</td>
+                        </tr>
+                        <tr>
+                            <th>Cleaning Type:</th>
+                            <td><span class="badge badge-${task.cleaning_type_badge}">${task.cleaning_type}</span></td>
+                        </tr>
+                        <tr>
+                            <th>Duration:</th>
+                            <td>${task.duration_formatted}</td>
+                        </tr>
+                        <tr>
+                            <th>Status:</th>
+                            <td><span class="badge badge-${task.status_badge}">${task.status}</span></td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <h6>Progress Tracking</h6>
+                    <table class="table table-bordered table-sm">
+                        <tr>
+                            <th width="40%">Started At:</th>
                             <td>${startedAt}</td>
                         </tr>
                         <tr>
@@ -126,252 +194,241 @@ class HousekeepingManager {
                             <td>${completedAt}</td>
                         </tr>
                         <tr>
-                            <th>Estimated Time:</th>
-                            <td>${task.estimated_minutes ? task.estimated_minutes + ' minutes' : 'N/A'}</td>
+                            <th>Quality Rating:</th>
+                            <td>${qualityRating}</td>
                         </tr>
                         <tr>
-                            <th>Actual Time:</th>
-                            <td>${duration}</td>
+                            <th>Supplies Cost:</th>
+                            <td>$${parseFloat(task.cleaning_supplies_cost || 0).toFixed(2)}</td>
                         </tr>
                     </table>
                 </div>
             </div>
-
-            ${task.description ? `
             <div class="row mt-3">
                 <div class="col-md-12">
-                    <h6>Task Description:</h6>
-                    <p>${task.description}</p>
+                    <h6>Cleaning Tasks</h6>
+                    <ul>
+                        ${tasksList}
+                    </ul>
+                </div>
+            </div>
+            ${task.special_instructions ? `
+            <div class="row mt-3">
+                <div class="col-12">
+                    <h6>Special Instructions:</h6>
+                    <div class="alert alert-light">
+                        ${task.special_instructions}
+                    </div>
                 </div>
             </div>
             ` : ''}
-
             ${task.notes ? `
             <div class="row mt-3">
-                <div class="col-md-12">
-                    <h6>Additional Notes:</h6>
-                    <p>${task.notes}</p>
+                <div class="col-12">
+                    <h6>Notes:</h6>
+                    <div class="alert alert-info">
+                        ${task.notes}
+                    </div>
                 </div>
             </div>
             ` : ''}
-
-            ${task.cancellation_reason ? `
+            ${task.issues_found ? `
             <div class="row mt-3">
-                <div class="col-md-12">
-                    <h6>Cancellation Reason:</h6>
-                    <p class="text-danger">${task.cancellation_reason}</p>
+                <div class="col-12">
+                    <h6>Issues Found:</h6>
+                    <div class="alert alert-warning">
+                        ${task.issues_found}
+                    </div>
+                </div>
+            </div>
+            ` : ''}
+            ${task.supervisor_notes ? `
+            <div class="row mt-3">
+                <div class="col-12">
+                    <h6>Supervisor Notes:</h6>
+                    <div class="alert alert-secondary">
+                        ${task.supervisor_notes}
+                    </div>
                 </div>
             </div>
             ` : ''}
         `;
 
-        $('#viewModalBody').html(content);
+        document.getElementById('viewModalBody').innerHTML = content;
         $('#viewModal').modal('show');
     }
 
-    getPriorityBadgeClass(priority) {
-        const classes = {
-            'Low': 'bg-success',
-            'Medium': 'bg-info',
-            'High': 'bg-warning',
-            'Urgent': 'bg-danger'
-        };
-        return classes[priority] || 'bg-secondary';
-    }
-
-    getStatusBadgeClass(status) {
-        const classes = {
-            'Pending': 'bg-warning',
-            'In Progress': 'bg-primary',
-            'Completed': 'bg-success',
-            'Cancelled': 'bg-secondary'
-        };
-        return classes[status] || 'bg-secondary';
-    }
-
-    confirmDelete(id) {
-        this.currentTaskId = id;
+    function confirmDelete(id) {
+        currentTaskId = id;
         $('#deleteModal').modal('show');
     }
 
-    confirmDeleteAll() {
-        $('#deleteAllModal').modal('show');
+    function confirmProgress(id) {
+        currentTaskId = id;
+        $('#progressModal').modal('show');
     }
 
-    confirmStart(id) {
-        this.currentTaskId = id;
-        $('#startModal').modal('show');
-    }
-
-    showCompleteModal(id) {
-        this.currentTaskId = id;
+    function confirmComplete(id) {
+        currentTaskId = id;
         $('#completeModal').modal('show');
     }
 
-    showCancelModal(id) {
-        this.currentTaskId = id;
+    function confirmCancel(id) {
+        currentTaskId = id;
         $('#cancelModal').modal('show');
     }
 
-    async deleteTask() {
-        if (!this.currentTaskId) return;
-
-        try {
-            const response = await $.ajax({
-                url: `/housekeeping/${this.currentTaskId}`,
-                type: 'DELETE',
-                data: {
-                    _token: $('meta[name="csrf-token"]').attr('content')
-                }
-            });
-
-            if (response.success) {
-                this.showAlert(response.message, 'success');
-                setTimeout(() => {
-                    location.reload();
-                }, 1000);
-            } else {
-                this.showAlert(response.message, 'error');
-            }
-        } catch (error) {
-            this.showAlert('Error deleting task.', 'error');
-        } finally {
-            $('#deleteModal').modal('hide');
-            this.currentTaskId = null;
-        }
-    }
-
-    async deleteAllTasks() {
-        try {
-            const response = await $.ajax({
-                url: '/housekeeping',
-                type: 'DELETE',
-                data: {
-                    _token: $('meta[name="csrf-token"]').attr('content')
-                }
-            });
-
-            if (response.success) {
-                this.showAlert(response.message, 'success');
-                setTimeout(() => {
-                    location.reload();
-                }, 1000);
-            } else {
-                this.showAlert(response.message, 'error');
-            }
-        } catch (error) {
-            this.showAlert('Error deleting all tasks.', 'error');
-        } finally {
-            $('#deleteAllModal').modal('hide');
-        }
-    }
-
-    async startTask() {
-        if (!this.currentTaskId) return;
-
-        try {
-            const response = await $.ajax({
-                url: `/housekeeping/${this.currentTaskId}/start`,
-                type: 'POST',
-                data: {
-                    _token: $('meta[name="csrf-token"]').attr('content')
-                }
-            });
-
-            if (response.success) {
-                this.showAlert(response.message, 'success');
-                setTimeout(() => {
-                    location.reload();
-                }, 1000);
-            } else {
-                this.showAlert(response.message, 'error');
-            }
-        } catch (error) {
-            this.showAlert('Error starting task.', 'error');
-        } finally {
-            $('#startModal').modal('hide');
-            this.currentTaskId = null;
-        }
-    }
-
-    async completeTask() {
-        if (!this.currentTaskId) return;
-
-        const actualMinutes = $('#actualMinutes').val();
-        const completionNotes = $('#completionNotes').val();
-
-        if (!actualMinutes || actualMinutes < 1) {
-            this.showAlert('Please enter a valid time taken.', 'warning');
+    async function deleteTask() {
+        if (!currentTaskId) {
+            showAlert('Error: No task selected for deletion.', 'error');
             return;
         }
 
         try {
-            const response = await $.ajax({
-                url: `/housekeeping/${this.currentTaskId}/complete`,
-                type: 'POST',
-                data: {
-                    _token: $('meta[name="csrf-token"]').attr('content'),
-                    actual_minutes: actualMinutes,
-                    completion_notes: completionNotes
+            const response = await fetch(`/housekeeping/${currentTaskId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
                 }
             });
 
-            if (response.success) {
-                this.showAlert(response.message, 'success');
-                setTimeout(() => {
-                    location.reload();
-                }, 1000);
+            const data = await response.json();
+
+            if (data.success) {
+                showAlert(data.message, 'success');
+                $('#deleteModal').modal('hide');
+                setTimeout(() => location.reload(), 1500);
             } else {
-                this.showAlert(response.message, 'error');
+                showAlert(data.message, 'error');
             }
         } catch (error) {
-            this.showAlert('Error completing task.', 'error');
+            console.error('Delete error:', error);
+            showAlert('Error deleting task. Please try again.', 'error');
         } finally {
-            $('#completeModal').modal('hide');
-            this.currentTaskId = null;
-            $('#actualMinutes').val('');
-            $('#completionNotes').val('');
+            currentTaskId = null;
         }
     }
 
-    async cancelTask() {
-        if (!this.currentTaskId) return;
-
-        const reason = $('#cancellationReason').val();
-
-        if (!reason) {
-            this.showAlert('Please enter a cancellation reason.', 'warning');
+    async function markInProgress() {
+        if (!currentTaskId) {
+            showAlert('Error: No task selected.', 'error');
             return;
         }
 
         try {
-            const response = await $.ajax({
-                url: `/housekeeping/${this.currentTaskId}/cancel`,
-                type: 'POST',
-                data: {
-                    _token: $('meta[name="csrf-token"]').attr('content'),
-                    reason: reason
+            const response = await fetch(`/housekeeping/${currentTaskId}/in-progress`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
                 }
             });
 
-            if (response.success) {
-                this.showAlert(response.message, 'success');
-                setTimeout(() => {
-                    location.reload();
-                }, 1000);
+            const data = await response.json();
+
+            if (data.success) {
+                showAlert(data.message, 'success');
+                $('#progressModal').modal('hide');
+                setTimeout(() => location.reload(), 1500);
             } else {
-                this.showAlert(response.message, 'error');
+                showAlert(data.message, 'error');
             }
         } catch (error) {
-            this.showAlert('Error cancelling task.', 'error');
+            console.error('Progress error:', error);
+            showAlert('Error updating task. Please try again.', 'error');
         } finally {
-            $('#cancelModal').modal('hide');
-            this.currentTaskId = null;
-            $('#cancellationReason').val('');
+            currentTaskId = null;
         }
     }
 
-    showAlert(message, type = 'info') {
+    async function markCompleted() {
+        if (!currentTaskId) {
+            showAlert('Error: No task selected.', 'error');
+            return;
+        }
+
+        const form = document.getElementById('completeForm');
+        const formData = new FormData(form);
+
+        // Validate quality rating
+        const qualityRating = formData.get('quality_rating');
+        if (!qualityRating) {
+            showAlert('Please select a quality rating.', 'warning');
+            return;
+        }
+
+        const requestData = {
+            quality_rating: parseInt(qualityRating),
+            cleaning_supplies_cost: parseFloat(formData.get('cleaning_supplies_cost') || 0),
+            issues_found: formData.get('issues_found'),
+            supervisor_notes: formData.get('supervisor_notes')
+        };
+
+        try {
+            const response = await fetch(`/housekeeping/${currentTaskId}/complete`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(requestData)
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                showAlert(data.message, 'success');
+                $('#completeModal').modal('hide');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showAlert(data.message, 'error');
+            }
+        } catch (error) {
+            console.error('Complete error:', error);
+            showAlert('Error completing task. Please try again.', 'error');
+        } finally {
+            currentTaskId = null;
+        }
+    }
+
+    async function cancelTask() {
+        if (!currentTaskId) {
+            showAlert('Error: No task selected.', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/housekeeping/${currentTaskId}/cancel`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                showAlert(data.message, 'success');
+                $('#cancelModal').modal('hide');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showAlert(data.message, 'error');
+            }
+        } catch (error) {
+            console.error('Cancel error:', error);
+            showAlert('Error cancelling task. Please try again.', 'error');
+        } finally {
+            currentTaskId = null;
+        }
+    }
+
+    function showAlert(message, type = 'info') {
         const alertClass = {
             'success': 'alert-success',
             'error': 'alert-danger',
@@ -380,26 +437,28 @@ class HousekeepingManager {
         }[type] || 'alert-info';
 
         // Remove existing alerts
-        $('.alert-dismissible').remove();
+        const existingAlerts = document.querySelectorAll('.alert-dismissible');
+        existingAlerts.forEach(alert => alert.remove());
 
-        const alert = $(`
+        const alert = `
             <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
                 ${message}
-                <button type="button" class="close" data-dismiss="alert">
-                    <span>&times;</span>
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-        `);
+        `;
 
-        $('.card-body').prepend(alert);
+        const cardBody = document.querySelector('.card-body');
+        if (cardBody) {
+            cardBody.insertAdjacentHTML('afterbegin', alert);
+        }
 
         setTimeout(() => {
-            alert.alert('close');
+            const alertElement = document.querySelector('.alert-dismissible');
+            if (alertElement) {
+                alertElement.remove();
+            }
         }, 5000);
     }
-}
-
-// Initialize housekeeping manager when document is ready
-$(document).ready(function () {
-    window.housekeepingManager = new HousekeepingManager();
 });

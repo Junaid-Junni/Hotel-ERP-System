@@ -1,12 +1,14 @@
+// resources/js/inventory.js
+
 $(document).ready(function () {
-    $.noConflict();
+    'use strict';
 
     // Initialize DataTable
-    var InventoryTable = $('#InventoryTable').DataTable({
+    const inventoryTable = $('#InventoryTable').DataTable({
         processing: true,
         serverSide: true,
         ajax: {
-            url: '/inventory/data',
+            url: '/inventory',
             type: 'GET',
             data: function (d) {
                 d.search = $('#search').val();
@@ -16,174 +18,266 @@ $(document).ready(function () {
             }
         },
         columns: [
-            {
-                data: 'sku',
-                name: 'sku'
-            },
+            { data: 'sku', name: 'sku' },
             {
                 data: 'name',
                 name: 'name',
                 render: function (data, type, row) {
-                    return data;
+                    return `<div class="d-flex align-items-center">
+                                ${row.image ?
+                            `<img src="/storage/${row.image}" alt="${data}" class="rounded me-3" width="40" height="40">` :
+                            `<div class="bg-light rounded me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                        <i class="fas fa-box text-muted"></i>
+                                    </div>`
+                        }
+                                <div>
+                                    <strong>${data}</strong>
+                                    ${row.brand ? `<br><small class="text-muted">${row.brand}</small>` : ''}
+                                </div>
+                            </div>`;
                 }
             },
-            {
-                data: 'category',
-                name: 'category'
-            },
-            {
-                data: 'cost_price',
-                name: 'cost_price'
-            },
-            {
-                data: 'selling_price',
-                name: 'selling_price'
-            },
+            { data: 'category', name: 'category' },
+            { data: 'cost_price', name: 'cost_price' },
+            { data: 'selling_price', name: 'selling_price' },
             {
                 data: 'quantity',
                 name: 'quantity',
-                orderable: false
+                render: function (data, type, row) {
+                    const quantity = parseInt(data);
+                    const minStock = parseInt(row.min_stock_level);
+                    let quantityClass = 'text-success';
+
+                    if (quantity === 0) {
+                        quantityClass = 'text-danger';
+                    } else if (quantity <= minStock) {
+                        quantityClass = 'text-warning';
+                    }
+
+                    return `<span class="${quantityClass} fw-bold">${quantity.toLocaleString()}</span>
+                            ${minStock > 0 ? `<br><small class="text-muted">Min: ${minStock}</small>` : ''}`;
+                }
             },
-            {
-                data: 'stock_status',
-                name: 'stock_status',
-                orderable: false
-            },
-            {
-                data: 'total_value',
-                name: 'total_value',
-                orderable: false
-            },
-            {
-                data: 'status',
-                name: 'status'
-            },
+            { data: 'stock_status', name: 'stock_status', orderable: false },
+            { data: 'total_value', name: 'total_value', orderable: false },
+            { data: 'profit_margin', name: 'profit_margin', orderable: false },
+            { data: 'status', name: 'status' },
             {
                 data: 'action',
                 name: 'action',
                 orderable: false,
                 searchable: false,
-                width: '120px'
+                width: '140px',
+                className: 'text-center'
             }
         ],
-        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rtip',
+        dom: '<"row"<"col-md-6"l><"col-md-6"f>>rt<"row"<"col-md-6"i><"col-md-6"p>>',
         buttons: [
             {
                 extend: 'excel',
-                text: '<i class="fa fa-table"></i> Excel',
+                text: '<i class="fas fa-file-excel me-1"></i> Excel',
                 className: 'btn btn-success',
-                titleAttr: 'Export to Excel',
-                filename: 'Inventory_List',
+                filename: `Inventory_${new Date().toISOString().split('T')[0]}`,
                 exportOptions: {
-                    columns: [0, 1, 2, 3, 4, 5, 6, 7, 8]
+                    columns: ':not(:last-child)'
                 }
             },
             {
                 extend: 'pdf',
-                text: '<i class="fa-solid fa-file-pdf"></i> PDF',
-                className: 'btn bg-purple',
-                titleAttr: 'Export to Pdf',
-                filename: 'Inventory_List',
+                text: '<i class="fas fa-file-pdf me-1"></i> PDF',
+                className: 'btn btn-danger',
+                filename: `Inventory_${new Date().toISOString().split('T')[0]}`,
                 exportOptions: {
-                    columns: [0, 1, 2, 3, 4, 5, 6, 7, 8]
+                    columns: ':not(:last-child)'
                 }
             },
             {
                 extend: 'print',
-                text: '<i class="fa fa-print"></i> Print',
+                text: '<i class="fas fa-print me-1"></i> Print',
                 className: 'btn btn-info',
-                titleAttr: 'Print Table',
                 exportOptions: {
-                    columns: [0, 1, 2, 3, 4, 5, 6, 7, 8]
+                    columns: ':not(:last-child)'
                 }
             }
         ],
         responsive: true,
         autoWidth: false,
         language: {
-            emptyTable: "No inventory items available",
-            zeroRecords: "No matching items found"
+            emptyTable: "No inventory items found",
+            zeroRecords: "No matching items found",
+            info: "Showing _START_ to _END_ of _TOTAL_ items",
+            infoEmpty: "Showing 0 to 0 of 0 items",
+            infoFiltered: "(filtered from _MAX_ total items)"
         },
-        order: [[0, 'desc']]
-    });
-
-    // Apply filters
-    $('#applyFilters').on('click', function () {
-        InventoryTable.ajax.reload();
-    });
-
-    // Enter key in search field
-    $('#search').on('keyup', function (e) {
-        if (e.keyCode === 13) {
-            InventoryTable.ajax.reload();
+        order: [[0, 'desc']],
+        drawCallback: function () {
+            // Update summary cards after table reload
+            updateSummaryCards();
         }
     });
 
-    // Stock Modal Handler
-    $('#stockModal').on('show.bs.modal', function (event) {
-        var button = $(event.relatedTarget);
-        var itemId = button.data('item-id');
-        var itemName = button.data('item-name');
-        var currentStock = button.data('current-stock');
-
-        var modal = $(this);
-        modal.find('#adjustmentItemId').val(itemId);
-        modal.find('#itemName').val(itemName);
-        modal.find('#currentStock').val(currentStock);
-        modal.find('#quantity').val('');
-        modal.find('#reason').val('');
+    // Event Handlers
+    $('#applyFilters').on('click', function () {
+        inventoryTable.ajax.reload();
     });
 
-    // Stock Adjustment Form Submission
+    $('#search').on('keyup', function (e) {
+        if (e.keyCode === 13) {
+            inventoryTable.ajax.reload();
+        }
+    });
+
+    // Clear filters
+    $('#clearFilters').on('click', function () {
+        $('#filterForm').trigger('reset');
+        inventoryTable.ajax.reload();
+    });
+
+    // Stock Modal
+    $('#stockModal').on('show.bs.modal', function (event) {
+        const button = $(event.relatedTarget);
+        const modal = $(this);
+
+        modal.find('#adjustmentItemId').val(button.data('item-id'));
+        modal.find('#itemName').val(button.data('item-name'));
+        modal.find('#currentStock').val(button.data('current-stock'));
+        modal.find('#quantity').val('');
+        modal.find('#reason').val('');
+        modal.find('#adjustmentType').val('add');
+    });
+
+    // Stock Adjustment Form
     $('#stockAdjustmentForm').on('submit', function (e) {
         e.preventDefault();
-
-        var formData = $(this).serialize();
-        var itemId = $('#adjustmentItemId').val();
-
-        $.ajax({
-            url: '/inventory/' + itemId + '/update-stock',
-            type: 'POST',
-            data: formData,
-            headers: {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-            },
-            success: function (response) {
-                if (response.success) {
-                    $('#stockModal').modal('hide');
-
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Success!',
-                        text: response.message,
-                        timer: 1500,
-                        showConfirmButton: false
-                    });
-
-                    InventoryTable.ajax.reload(null, false);
-                }
-            },
-            error: function (xhr) {
-                let errorMessage = 'Failed to update stock!';
-                if (xhr.responseJSON && xhr.responseJSON.message) {
-                    errorMessage = xhr.responseJSON.message;
-                }
-
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error!',
-                    text: errorMessage
-                });
-            }
-        });
+        adjustStock($(this).serialize());
     });
 
     // Delete Single Item
-    $(document).on('click', '.DeleteBtn', function () {
-        var ID = $(this).data('id');
+    $(document).on('click', '.delete-btn', function () {
+        const itemId = $(this).data('id');
+        const itemName = $(this).data('name');
+
+        confirmDelete(() => deleteItem(itemId), `Are you sure you want to delete "${itemName}"?`);
+    });
+
+    // Bulk Delete
+    $('#deleteSelectedBtn').on('click', function () {
+        const selectedIds = getSelectedIds();
+
+        if (selectedIds.length === 0) {
+            showAlert('Please select at least one item to delete.', 'warning');
+            return;
+        }
+
+        confirmDelete(() => bulkDelete(selectedIds), `Are you sure you want to delete ${selectedIds.length} selected items?`);
+    });
+
+    // Auto-generate SKU
+    $('#name, #category').on('blur', function () {
+        generateSKU();
+    });
+
+    // Calculate profit margin
+    $('#cost_price, #selling_price').on('change', function () {
+        calculateProfitMargin();
+    });
+
+    // Helper Functions
+    function adjustStock(formData) {
+        const itemId = $('#adjustmentItemId').val();
+
+        $.ajax({
+            url: `/inventory/${itemId}/update-stock`,
+            type: 'POST',
+            data: formData,
+            headers: getCSRFHeader(),
+            success: function (response) {
+                $('#stockModal').modal('hide');
+                showAlert(response.message, 'success');
+                inventoryTable.ajax.reload(null, false);
+            },
+            error: handleAjaxError
+        });
+    }
+
+    function deleteItem(itemId) {
+        $.ajax({
+            type: 'DELETE',
+            url: `/inventory/${itemId}`,
+            headers: getCSRFHeader(),
+            success: function (response) {
+                showAlert(response.message, 'success');
+                inventoryTable.ajax.reload(null, false);
+            },
+            error: handleAjaxError
+        });
+    }
+
+    function bulkDelete(ids) {
+        $.ajax({
+            type: 'POST',
+            url: '/inventory/bulk-delete',
+            data: { ids: ids, _method: 'DELETE' },
+            headers: getCSRFHeader(),
+            success: function (response) {
+                showAlert(response.message, 'success');
+                inventoryTable.ajax.reload(null, false);
+            },
+            error: handleAjaxError
+        });
+    }
+
+    function generateSKU() {
+        if (!$('#sku').val()) {
+            const name = $('#name').val();
+            const category = $('#category').val();
+
+            if (name && category) {
+                const baseSKU = category.substring(0, 3).toUpperCase() +
+                    name.replace(/\s+/g, '').substring(0, 5).toUpperCase();
+                const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+                $('#sku').val(baseSKU + random);
+            }
+        }
+    }
+
+    function calculateProfitMargin() {
+        const costPrice = parseFloat($('#cost_price').val()) || 0;
+        const sellingPrice = parseFloat($('#selling_price').val()) || 0;
+
+        if (costPrice > 0 && sellingPrice > 0) {
+            const margin = ((sellingPrice - costPrice) / costPrice) * 100;
+            showProfitMargin(margin);
+        }
+    }
+
+    function showProfitMargin(margin) {
+        let marginElement = $('#profit_margin_display');
+
+        if (marginElement.length === 0) {
+            $('#selling_price').after('<div class="form-text" id="profit_margin_display"></div>');
+            marginElement = $('#profit_margin_display');
+        }
+
+        const marginClass = margin >= 0 ? 'text-success' : 'text-danger';
+        const icon = margin >= 0 ? 'fa-arrow-up' : 'fa-arrow-down';
+
+        marginElement.html(
+            `<i class="fas ${icon} ${marginClass} me-1"></i>
+             Profit Margin: <span class="${marginClass} fw-bold">${margin.toFixed(2)}%</span>`
+        );
+    }
+
+    function getSelectedIds() {
+        return $('input[name="item_ids[]"]:checked').map(function () {
+            return $(this).val();
+        }).get();
+    }
+
+    function confirmDelete(callback, message) {
         Swal.fire({
             title: 'Are you sure?',
-            text: "This item will be moved to trash!",
+            text: message,
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#3085d6',
@@ -192,111 +286,34 @@ $(document).ready(function () {
             cancelButtonText: 'Cancel'
         }).then((result) => {
             if (result.isConfirmed) {
-                $.ajax({
-                    type: 'DELETE',
-                    url: '/inventory/' + ID,
-                    data: {
-                        _token: $('meta[name="csrf-token"]').attr('content')
-                    },
-                    success: function (response) {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Deleted!',
-                            text: 'Item moved to trash successfully!',
-                            timer: 1500,
-                            showConfirmButton: false
-                        });
-                        InventoryTable.ajax.reload(null, false);
-                    },
-                    error: function (xhr) {
-                        let errorMessage = 'Failed to delete item!';
-                        if (xhr.responseJSON && xhr.responseJSON.message) {
-                            errorMessage = xhr.responseJSON.message;
-                        }
-                        Swal.fire('Error!', errorMessage, 'error');
-                    }
-                });
+                callback();
             }
         });
-    });
+    }
 
-    // Delete All Items
-    $('#DeleteAllBtn').on('click', function () {
+    function showAlert(message, type) {
         Swal.fire({
-            title: 'Are you sure?',
-            text: "This will move ALL items to trash! This action cannot be undone.",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Yes, delete all!',
-            cancelButtonText: 'Cancel'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                $.ajax({
-                    type: 'DELETE',
-                    url: '/inventory/delete-all',
-                    data: {
-                        _token: $('meta[name="csrf-token"]').attr('content')
-                    },
-                    success: function (response) {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Deleted!',
-                            text: 'All items moved to trash successfully!',
-                            timer: 1500,
-                            showConfirmButton: false
-                        });
-                        InventoryTable.ajax.reload(null, false);
-                    },
-                    error: function (xhr) {
-                        let errorMessage = 'Failed to delete all items!';
-                        if (xhr.responseJSON && xhr.responseJSON.message) {
-                            errorMessage = xhr.responseJSON.message;
-                        }
-                        Swal.fire('Error!', errorMessage, 'error');
-                    }
-                });
-            }
+            icon: type,
+            title: type === 'success' ? 'Success!' : 'Error!',
+            text: message,
+            timer: type === 'success' ? 1500 : 3000,
+            showConfirmButton: false
         });
-    });
+    }
 
-    // Auto-generate SKU
-    $('#name, #category').on('blur', function () {
-        if (!$('#sku').val()) {
-            var name = $('#name').val();
-            var category = $('#category').val();
+    function getCSRFHeader() {
+        return {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+        };
+    }
 
-            if (name && category) {
-                var baseSKU = category.substring(0, 3).toUpperCase() +
-                    name.replace(/\s+/g, '').substring(0, 5).toUpperCase();
-                var random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    function handleAjaxError(xhr) {
+        const errorMessage = xhr.responseJSON?.message || 'An error occurred. Please try again.';
+        showAlert(errorMessage, 'error');
+    }
 
-                $('#sku').val(baseSKU + random);
-            }
-        }
-    });
-
-    // Calculate profit margin
-    $('#cost_price, #selling_price').on('change', function () {
-        var costPrice = parseFloat($('#cost_price').val()) || 0;
-        var sellingPrice = parseFloat($('#selling_price').val()) || 0;
-
-        if (costPrice > 0 && sellingPrice > 0) {
-            var margin = ((sellingPrice - costPrice) / costPrice) * 100;
-            showProfitMargin(margin);
-        }
-    });
-
-    function showProfitMargin(margin) {
-        var marginElement = $('#profit_margin_display');
-
-        if (marginElement.length === 0) {
-            $('#selling_price').after('<div class="form-text" id="profit_margin_display"></div>');
-            marginElement = $('#profit_margin_display');
-        }
-
-        var marginClass = margin >= 0 ? 'text-success' : 'text-danger';
-        marginElement.html('Profit Margin: <span class="' + marginClass + '">' + margin.toFixed(2) + '%</span>');
+    function updateSummaryCards() {
+        // You can implement AJAX call to update summary cards if needed
+        console.log('Summary cards updated');
     }
 });

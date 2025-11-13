@@ -1,5 +1,4 @@
 <?php
-// app/Models/HousekeepingTask.php
 
 namespace App\Models;
 
@@ -13,24 +12,29 @@ class HousekeepingTask extends Model
 
     protected $fillable = [
         'room_id',
-        'assigned_to',
-        'task_type',
-        'description',
-        'priority',
+        'employee_id',
+        'cleaning_date',
+        'cleaning_time',
+        'cleaning_type',
         'status',
-        'scheduled_date',
+        'tasks',
+        'notes',
+        'duration_minutes',
+        'cleaning_supplies_cost',
+        'issues_found',
+        'special_instructions',
         'started_at',
         'completed_at',
-        'estimated_minutes',
-        'actual_minutes',
-        'notes',
-        'cancellation_reason'
+        'quality_rating',
+        'supervisor_notes'
     ];
 
     protected $casts = [
-        'scheduled_date' => 'datetime',
+        'cleaning_date' => 'date',
+        'tasks' => 'array',
         'started_at' => 'datetime',
         'completed_at' => 'datetime',
+        'cleaning_supplies_cost' => 'decimal:2'
     ];
 
     // Relationships
@@ -39,43 +43,126 @@ class HousekeepingTask extends Model
         return $this->belongsTo(Room::class);
     }
 
-    public function assignedEmployee()
+    public function employee()
     {
-        return $this->belongsTo(Employee::class, 'assigned_to');
+        return $this->belongsTo(Employee::class);
     }
 
-    // Accessor for task duration
-    public function getDurationAttribute()
+    // Accessors
+    public function getCleaningDateTimeAttribute()
     {
-        if ($this->started_at && $this->completed_at) {
-            return $this->started_at->diffInMinutes($this->completed_at);
+        return $this->cleaning_date->format('Y-m-d') . ' ' . $this->cleaning_time;
+    }
+
+    public function getFormattedCleaningDateAttribute()
+    {
+        return $this->cleaning_date->format('M d, Y');
+    }
+
+    public function getFormattedCleaningTimeAttribute()
+    {
+        return date('h:i A', strtotime($this->cleaning_time));
+    }
+
+    public function getDurationFormattedAttribute()
+    {
+        $hours = floor($this->duration_minutes / 60);
+        $minutes = $this->duration_minutes % 60;
+
+        if ($hours > 0) {
+            return $hours . 'h ' . $minutes . 'm';
         }
-        return null;
+        return $minutes . 'm';
     }
 
-    // Check if task is overdue
-    public function getIsOverdueAttribute()
+    public function getStatusBadgeAttribute()
     {
-        return $this->status === 'Pending' && $this->scheduled_date < now();
+        $badges = [
+            'Scheduled' => 'primary',
+            'In Progress' => 'warning',
+            'Completed' => 'success',
+            'Cancelled' => 'danger'
+        ];
+
+        return $badges[$this->status] ?? 'secondary';
     }
 
-    // Scope for active tasks
-    public function scopeActive($query)
+    public function getCleaningTypeBadgeAttribute()
     {
-        return $query->whereIn('status', ['Pending', 'In Progress']);
+        $badges = [
+            'Daily' => 'info',
+            'Checkout' => 'primary',
+            'Deep' => 'warning',
+            'Maintenance' => 'danger'
+        ];
+
+        return $badges[$this->cleaning_type] ?? 'secondary';
     }
 
-    // Scope for today's tasks
+    // Scopes
+    public function scopeScheduled($query)
+    {
+        return $query->where('status', 'Scheduled');
+    }
+
+    public function scopeInProgress($query)
+    {
+        return $query->where('status', 'In Progress');
+    }
+
+    public function scopeCompleted($query)
+    {
+        return $query->where('status', 'Completed');
+    }
+
     public function scopeToday($query)
     {
-        return $query->whereDate('scheduled_date', today());
+        return $query->where('cleaning_date', today());
     }
 
-    // Generate task ID
-    public static function generateTaskId()
+    public function scopeThisWeek($query)
     {
-        $latest = self::latest()->first();
-        $number = $latest ? intval(substr($latest->task_id, 3)) + 1 : 1;
-        return 'TASK' . str_pad($number, 4, '0', STR_PAD_LEFT);
+        return $query->whereBetween('cleaning_date', [now()->startOfWeek(), now()->endOfWeek()]);
+    }
+
+    public function scopeByEmployee($query, $employeeId)
+    {
+        return $query->where('employee_id', $employeeId);
+    }
+
+    public function scopeByRoom($query, $roomId)
+    {
+        return $query->where('room_id', $roomId);
+    }
+
+    // Methods
+    public function markInProgress()
+    {
+        $this->update([
+            'status' => 'In Progress',
+            'started_at' => now()
+        ]);
+    }
+
+    public function markCompleted($rating = null, $notes = null)
+    {
+        $this->update([
+            'status' => 'Completed',
+            'completed_at' => now(),
+            'quality_rating' => $rating,
+            'supervisor_notes' => $notes
+        ]);
+
+        // Update room status based on cleaning type
+        if ($this->cleaning_type === 'Maintenance') {
+            $this->room->update(['Status' => 'Available']);
+        } else {
+            $this->room->update(['Status' => 'Available']);
+        }
+    }
+
+    public function isOverdue()
+    {
+        return $this->status === 'Scheduled' && $this->cleaning_date < today();
     }
 }

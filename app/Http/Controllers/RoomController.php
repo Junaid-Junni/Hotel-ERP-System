@@ -136,12 +136,33 @@ class RoomController extends Controller
 
     public function destroyAll()
     {
-        Room::query()->delete();
+        try {
+            // Get all rooms
+            $rooms = Room::all();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'All rooms moved to trash successfully!'
-        ]);
+            foreach ($rooms as $room) {
+                // Delete associated images from storage
+                if ($room->Images) {
+                    foreach ($room->Images as $image) {
+                        if (Storage::disk('public')->exists($image)) {
+                            Storage::disk('public')->delete($image);
+                        }
+                    }
+                }
+                // Soft delete the room
+                $room->delete();
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'All rooms moved to trash successfully!'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error deleting rooms: ' . $e->getMessage()
+            ]);
+        }
     }
 
     // Trash methods
