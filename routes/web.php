@@ -26,14 +26,16 @@ use Ramsey\Uuid\Guid\Guid;
 | contains the "web" middleware group. Now create something great!
 |
 */
+use App\Http\Controllers\PaymentController;
 
 require __DIR__ . '/auth.php';
 
 /*
 |--------------------------------------------------------------------------
-| Web Register Route
+| Web Routes
 |--------------------------------------------------------------------------
 */
+
 Route::resource('user', RegisteredUserController::class);
 Route::post('user/assign/role', [UserController::class, 'assignRole']);
 
@@ -56,30 +58,32 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/dashboard', function () {
         return view('dashboard');
     })->name('dashboard');
+});
+Route::middleware(['auth'])->group(function () {
 
-    Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+    Route::get('/dashboard', fn() => view('dashboard'))->name('dashboard');
+    Route::get('/home', [HomeController::class, 'index'])->name('home');
 
-    // Room Management Routes
-    Route::prefix('rooms')->name('rooms.')->group(function () {
-        Route::get('/', [RoomController::class, 'index'])->name('index');
-        Route::get('/create', [RoomController::class, 'create'])->name('create');
-        Route::post('/', [RoomController::class, 'store'])->name('store');
-        Route::get('/{id}', [RoomController::class, 'show'])->name('show');
-        Route::get('/{id}/edit', [RoomController::class, 'edit'])->name('edit');
-        Route::put('/{id}', [RoomController::class, 'update'])->name('update');
-        Route::delete('/{id}', [RoomController::class, 'destroy'])->name('destroy');
-        Route::delete('/', [RoomController::class, 'deleteAll'])->name('deleteAll');
+    /*
+    |--------------------------------------------------------------------------
+    | Room Routes
+    |--------------------------------------------------------------------------
+    */
+    Route::resource('rooms', RoomController::class);
+    Route::delete('rooms/delete-all', [RoomController::class, 'destroyAll'])->name('rooms.destroy.all');
 
-        // DataTables Route
-        Route::get('/data/get', [RoomController::class, 'getRooms'])->name('data.get');
-
-        // Trash Routes
-        Route::get('/trash/index', [RoomController::class, 'trash'])->name('trash.index');
-        Route::post('/trash/{id}/restore', [RoomController::class, 'restore'])->name('trash.restore');
-        Route::delete('/trash/{id}/force', [RoomController::class, 'forceDelete'])->name('trash.forceDelete');
+    Route::prefix('rooms/trash')->group(function () {
+        Route::get('/', [RoomController::class, 'trashIndex'])->name('rooms.trash.index');
+        Route::post('/{id}/restore', [RoomController::class, 'trashRestore'])->name('rooms.trash.restore');
+        Route::delete('/{id}/destroy', [RoomController::class, 'trashDestroy'])->name('rooms.trash.destroy');
+        Route::delete('/empty', [RoomController::class, 'trashEmpty'])->name('rooms.trash.empty');
     });
 
-    // Booking Management Routes
+    /*
+    |--------------------------------------------------------------------------
+    | Booking Routes
+    |--------------------------------------------------------------------------
+    */
     Route::prefix('bookings')->name('bookings.')->group(function () {
         Route::get('/', [BookingController::class, 'index'])->name('index');
         Route::get('/create', [BookingController::class, 'create'])->name('create');
@@ -90,45 +94,48 @@ Route::group(['middleware' => 'auth'], function () {
         Route::delete('/{id}', [BookingController::class, 'destroy'])->name('destroy');
         Route::delete('/', [BookingController::class, 'deleteAll'])->name('deleteAll');
 
-        // Additional booking routes
         Route::post('/{id}/checkin', [BookingController::class, 'checkIn'])->name('checkin');
         Route::post('/{id}/checkout', [BookingController::class, 'checkOut'])->name('checkout');
         Route::post('/{id}/cancel', [BookingController::class, 'cancel'])->name('cancel');
         Route::post('/{id}/payment', [BookingController::class, 'addPayment'])->name('payment');
 
-        // DataTables Route
         Route::get('/data/get', [BookingController::class, 'getBookings'])->name('data.get');
-
-        // Check room availability
         Route::post('/check-availability', [BookingController::class, 'checkAvailability'])->name('check-availability');
 
-        // Trash Routes
         Route::get('/trash/index', [BookingController::class, 'trash'])->name('trash.index');
         Route::post('/trash/{id}/restore', [BookingController::class, 'restore'])->name('trash.restore');
         Route::delete('/trash/{id}/force', [BookingController::class, 'forceDelete'])->name('trash.forceDelete');
     });
 
-    // Transaction Routes
-    Route::prefix('transactions')->group(function () {
-        Route::get('/', [TransactionController::class, 'index'])->name('transactions.index');
-        Route::get('/create', [TransactionController::class, 'create'])->name('transactions.create');
-        Route::post('/', [TransactionController::class, 'store'])->name('transactions.store');
+    /*
+    |--------------------------------------------------------------------------
+    | Transaction Routes
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('transactions')->name('transactions.')->group(function () {
+        Route::get('/', [TransactionController::class, 'index'])->name('index');
+        Route::get('/create', [TransactionController::class, 'create'])->name('create');
+        Route::post('/', [TransactionController::class, 'store'])->name('store');
         Route::get('/{id}', [TransactionController::class, 'show'])->name('transactions.show');
-        Route::get('/{id}/edit', [TransactionController::class, 'edit'])->name('transactions.edit');
-        Route::put('/{id}', [TransactionController::class, 'update'])->name('transactions.update');
-        Route::delete('/{id}', [TransactionController::class, 'destroy'])->name('transactions.destroy');
-        Route::get('/trash/list', [TransactionController::class, 'trash'])->name('transactions.trash');
-        Route::post('/{id}/restore', [TransactionController::class, 'restore'])->name('transactions.restore');
-        Route::delete('/{id}/force-delete', [TransactionController::class, 'forceDelete'])->name('transactions.forceDelete');
-        Route::delete('/trash/empty', [TransactionController::class, 'emptyTrash'])->name('transactions.emptyTrash');
-        Route::get('/income-report', [TransactionController::class, 'incomeReport'])->name('transactions.incomeReport');
-        Route::get('/expense-report', [TransactionController::class, 'expenseReport'])->name('transactions.expenseReport');
-        Route::get('/financial-summary', [TransactionController::class, 'financialSummary'])->name('transactions.financialSummary');
+        Route::get('/{id}/edit', [TransactionController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [TransactionController::class, 'update'])->name('update');
+        Route::delete('/{id}', [TransactionController::class, 'destroy'])->name('destroy');
+
+        Route::get('/trash/list', [TransactionController::class, 'trash'])->name('trash');
+        Route::post('/{id}/restore', [TransactionController::class, 'restore'])->name('restore');
+        Route::delete('/{id}/force-delete', [TransactionController::class, 'forceDelete'])->name('forceDelete');
+        Route::delete('/trash/empty', [TransactionController::class, 'emptyTrash'])->name('emptyTrash');
+
+        Route::get('/income-report', [TransactionController::class, 'incomeReport'])->name('incomeReport');
+        Route::get('/expense-report', [TransactionController::class, 'expenseReport'])->name('expenseReport');
+        Route::get('/financial-summary', [TransactionController::class, 'financialSummary'])->name('financialSummary');
     });
 
-
-    // Inventory Management Routes
-    // Inventory Management Routes
+    /*
+    |--------------------------------------------------------------------------
+    | Inventory Routes
+    |--------------------------------------------------------------------------
+    */
     Route::get('/inventory/data', [InventoryController::class, 'getDataTable'])->name('inventory.data');
     Route::get('/inventory/low-stock', [InventoryController::class, 'lowStock'])->name('inventory.low-stock');
     Route::get('/inventory/trash', [InventoryController::class, 'trash'])->name('inventory.trash');
@@ -136,124 +143,90 @@ Route::group(['middleware' => 'auth'], function () {
     Route::post('/inventory/{id}/update-stock', [InventoryController::class, 'updateStock'])->name('inventory.update-stock');
     Route::delete('/inventory/{id}/force-delete', [InventoryController::class, 'forceDelete'])->name('inventory.force-delete');
     Route::delete('/inventory/delete-all', [InventoryController::class, 'deleteAll'])->name('inventory.delete-all');
-
-    // This should be LAST to avoid route conflicts
     Route::resource('inventory', InventoryController::class);
+
     /*
     |--------------------------------------------------------------------------
-    | Web RoomTansfer Route
+    | Employee Routes
     |--------------------------------------------------------------------------
     */
-    // Route::get('roomTransfer/trash', [RoomTransferController::class, 'trash']);
-    // Route::get('/roomTransfer/delete', [RoomTransferController::class, 'destroyAll']);
-    // Route::get('roomTransfer/{id}/restore', [RoomTransferController::class, 'restore']);
-    // Route::get('roomTransfer/restoreAll', [RoomTransferController::class, 'restoreAll']);
-    // Route::get('/roomTransfer/{id}/parmanently/delete', [RoomTransferController::class, 'forceDeleted']);
-    // Route::get('/roomTransfer/emptyTrash', [RoomTransferController::class, 'emptyTrash']);
-    // Route::get('/roomTransfer/delete/{id}', [RoomTransferController::class, 'destroy']);
-    // Route::resource('roomTransfer', RoomTransferController::class);
+    Route::prefix('employees')->name('employees.')->group(function () {
+        Route::get('/', [EmployeeController::class, 'index'])->name('index');
+        Route::get('/create', [EmployeeController::class, 'create'])->name('create');
+        Route::post('/', [EmployeeController::class, 'store'])->name('store');
+        Route::get('/{id}', [EmployeeController::class, 'show'])->name('show');
+        Route::get('/{id}/edit', [EmployeeController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [EmployeeController::class, 'update'])->name('update');
+        Route::delete('/{id}', [EmployeeController::class, 'destroy'])->name('destroy');
+        Route::delete('/', [EmployeeController::class, 'deleteAll'])->name('deleteAll');
 
+        Route::post('/{id}/status', [EmployeeController::class, 'updateStatus'])->name('status');
+        Route::get('/data/get', [EmployeeController::class, 'getEmployees'])->name('data.get');
 
+        Route::get('/trash/index', [EmployeeController::class, 'trash'])->name('trash.index');
+        Route::post('/trash/{id}/restore', [EmployeeController::class, 'restore'])->name('trash.restore');
+        Route::delete('/trash/{id}/force', [EmployeeController::class, 'forceDelete'])->name('trash.forceDelete');
+    });
 
-    // Trash management routes
-    Route::get('/trash/list', [BookingController::class, 'trash'])->name('bookings.trash');
-    Route::get('/{id}/restore', [BookingController::class, 'restore'])->name('bookings.restore');
-    Route::delete('/{id}/force-delete', [BookingController::class, 'forceDeleted'])->name('bookings.forceDeleted');
-    Route::delete('/trash/empty', [BookingController::class, 'emptyTrash'])->name('bookings.emptyTrash');
-    Route::delete('/delete/all', [BookingController::class, 'destroyAll'])->name('bookings.destroyAll');
-    Route::get('/restore/all', [BookingController::class, 'restoreAll'])->name('bookings.restoreAll');
-
-    // AJAX routes
-    Route::get('/check/availability', [BookingController::class, 'checkAvailability'])->name('bookings.checkAvailability');
-});
-
-
-/*
+    /*
     |--------------------------------------------------------------------------
-    | Web Guests Route
+    | Housekeeping Routes
     |--------------------------------------------------------------------------
     */
-// Route::get('/guest/trash', [GuestController::class, 'trash']);
-// Route::get('/guest/delete', [GuestController::class, 'destroyAll']);
-// Route::get('/guest/{id}/restore', [GuestController::class, 'restore']);
-// Route::get('/guest/restoreAll', [GuestController::class, 'restoreAll']);
-// Route::get('/guest/parmanently/delete/{id}', [GuestController::class, 'forceDelete']);
-// Route::get('/guest/emptyTrash', [GuestController::class, 'emptyTrash']);
-// Route::get('/guest/delete/{id}',[GuestController::class,'destroy']);
-// Route::resource('guest', GuestController::class);
+    // Housekeeping Routes
+    Route::prefix('housekeeping')->group(function () {
+        // Main CRUD routes
+        Route::get('/', [HousekeepingController::class, 'index'])->name('housekeeping.index');
+        Route::get('/create', [HousekeepingController::class, 'create'])->name('housekeeping.create');
+        Route::post('/', [HousekeepingController::class, 'store'])->name('housekeeping.store');
+        Route::get('/{housekeeping}/edit', [HousekeepingController::class, 'edit'])->name('housekeeping.edit');
+        Route::put('/{housekeeping}', [HousekeepingController::class, 'update'])->name('housekeeping.update');
+        Route::get('/{housekeeping}', [HousekeepingController::class, 'show'])->name('housekeeping.show');
 
-/*
+        // Delete routes
+        Route::delete('/{housekeeping}', [HousekeepingController::class, 'destroy'])->name('housekeeping.destroy');
+
+        // Status update routes
+        Route::post('/{housekeeping}/in-progress', [HousekeepingController::class, 'markInProgress'])->name('housekeeping.in-progress');
+        Route::post('/{housekeeping}/complete', [HousekeepingController::class, 'markCompleted'])->name('housekeeping.complete');
+        Route::post('/{housekeeping}/cancel', [HousekeepingController::class, 'cancel'])->name('housekeeping.cancel');
+
+        // Dashboard and reports
+        Route::get('/dashboard', [HousekeepingController::class, 'dashboard'])->name('housekeeping.dashboard');
+        Route::get('/tasks/{date}', [HousekeepingController::class, 'getTasksByDate'])->name('housekeeping.tasks-by-date');
+        // Trash management routes
+        Route::get('/trash/index', [HousekeepingController::class, 'trashIndex'])->name('housekeeping.trash.index');
+        Route::post('/trash/{housekeeping}/restore', [HousekeepingController::class, 'trashRestore'])->name('housekeeping.trash.restore');
+        Route::delete('/trash/{housekeeping}/destroy', [HousekeepingController::class, 'trashDestroy'])->name('housekeeping.trash.destroy');
+        Route::delete('/trash/empty', [HousekeepingController::class, 'trashEmpty'])->name('housekeeping.trash.empty');
+    });
+
+    /*
     |--------------------------------------------------------------------------
-    | Web Emplooyee Route
-    |--------------------------------------------------------------------------
-    */
-// Employee Management Routes
-Route::prefix('employees')->name('employees.')->group(function () {
-    Route::get('/', [EmployeeController::class, 'index'])->name('index');
-    Route::get('/create', [EmployeeController::class, 'create'])->name('create');
-    Route::post('/', [EmployeeController::class, 'store'])->name('store');
-    Route::get('/{id}', [EmployeeController::class, 'show'])->name('show');
-    Route::get('/{id}/edit', [EmployeeController::class, 'edit'])->name('edit');
-    Route::put('/{id}', [EmployeeController::class, 'update'])->name('update');
-    Route::delete('/{id}', [EmployeeController::class, 'destroy'])->name('destroy');
-    Route::delete('/', [EmployeeController::class, 'deleteAll'])->name('deleteAll');
-
-    // Additional employee routes
-    Route::post('/{id}/status', [EmployeeController::class, 'updateStatus'])->name('status');
-
-    // DataTables Route
-    Route::get('/data/get', [EmployeeController::class, 'getEmployees'])->name('data.get');
-
-    // Trash Routes
-    Route::get('/trash/index', [EmployeeController::class, 'trash'])->name('trash.index');
-    Route::post('/trash/{id}/restore', [EmployeeController::class, 'restore'])->name('trash.restore');
-    Route::delete('/trash/{id}/force', [EmployeeController::class, 'forceDelete'])->name('trash.forceDelete');
-});
-
-// Housekeeping Management Routes
-Route::prefix('housekeeping')->name('housekeeping.')->group(function () {
-    Route::get('/', [HousekeepingController::class, 'index'])->name('index');
-    Route::get('/create', [HousekeepingController::class, 'create'])->name('create');
-    Route::post('/', [HousekeepingController::class, 'store'])->name('store');
-
-    // Dashboard and Calendar routes - MUST come before parameterized routes
-    Route::get('/dashboard', [HousekeepingController::class, 'dashboard'])->name('dashboard');
-    Route::get('/calendar', [HousekeepingController::class, 'calendar'])->name('calendar');
-
-    // DataTables Route
-    Route::get('/data/get', [HousekeepingController::class, 'getTasks'])->name('data.get');
-
-    // Parameterized routes - MUST come after specific routes
-    Route::get('/{id}', [HousekeepingController::class, 'show'])->name('show');
-    Route::get('/{id}/edit', [HousekeepingController::class, 'edit'])->name('edit');
-    Route::put('/{id}', [HousekeepingController::class, 'update'])->name('update');
-    Route::delete('/{id}', [HousekeepingController::class, 'destroy'])->name('destroy');
-
-    // Additional housekeeping routes
-    Route::post('/{id}/start', [HousekeepingController::class, 'startTask'])->name('start');
-    Route::post('/{id}/complete', [HousekeepingController::class, 'completeTask'])->name('complete');
-    Route::post('/{id}/cancel', [HousekeepingController::class, 'cancelTask'])->name('cancel');
-
-    Route::delete('/', [HousekeepingController::class, 'deleteAll'])->name('deleteAll');
-
-    // Trash Routes
-    Route::get('/trash/index', [HousekeepingController::class, 'trash'])->name('trash.index');
-    Route::post('/trash/{id}/restore', [HousekeepingController::class, 'restore'])->name('trash.restore');
-    Route::delete('/trash/{id}/force', [HousekeepingController::class, 'forceDelete'])->name('trash.forceDelete');
-});
-/*
-    |--------------------------------------------------------------------------
-    | Web User Route
+    | Payment Routes
     |--------------------------------------------------------------------------
     */
-Route::get('/user/delete/{id}', [UserController::class, 'destroy']);
-Route::get('/user/delete', [UserController::class, 'destroyAll']);
-Route::resource('user', UserController::class);
+    Route::prefix('payments')->name('payments.')->group(function () {
+        Route::get('/booking/{booking}/create', [PaymentController::class, 'create'])->name('create');
+        Route::post('/booking/{booking}', [PaymentController::class, 'store'])->name('store');
+        Route::get('/{payment}', [PaymentController::class, 'show'])->name('show');
+        Route::delete('/{payment}', [PaymentController::class, 'destroy'])->name('destroy');
+        Route::get('/{payment}/download-proof', [PaymentController::class, 'downloadProof'])->name('download-proof');
+    });
 
-
-/*
+    /*
     |--------------------------------------------------------------------------
-    | Web profile Route
+    | User Routes
     |--------------------------------------------------------------------------
     */
-Route::get('profile/show', [ProfileController::class, 'index']);
+    Route::get('/user/delete/{id}', [UserController::class, 'destroy']);
+    Route::get('/user/delete', [UserController::class, 'destroyAll']);
+    Route::resource('user', UserController::class);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Profile Route
+    |--------------------------------------------------------------------------
+    */
+    Route::get('profile/show', [ProfileController::class, 'index']);
+}); // <-- ✅ this closes the main auth group properly

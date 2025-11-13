@@ -59,4 +59,9 @@ class Employee extends Model
         $number = $latest ? intval(substr($latest->employee_id, 3)) + 1 : 1;
         return 'EMP' . str_pad($number, 4, '0', STR_PAD_LEFT);
     }
+    // Relationship with Housekeeping
+    public function housekeepings()
+    {
+        return $this->hasMany(HousekeepingTask::class);
+    }
 }

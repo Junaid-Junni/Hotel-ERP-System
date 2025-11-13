@@ -1,5 +1,4 @@
 <?php
-// app/Models/Room.php
 
 namespace App\Models;
 
@@ -20,8 +19,8 @@ class Room extends Model
         'Status',
         'Description',
         'AC',
-        'TV',
         'WiFi',
+        'TV',
         'Geyser',
         'Balcony',
         'Intercom',
@@ -31,27 +30,44 @@ class Room extends Model
     ];
 
     protected $casts = [
-        'Price' => 'decimal:2',
         'AC' => 'boolean',
-        'TV' => 'boolean',
         'WiFi' => 'boolean',
+        'TV' => 'boolean',
         'Geyser' => 'boolean',
         'Balcony' => 'boolean',
         'Intercom' => 'boolean',
         'RoomService' => 'boolean',
         'Minibar' => 'boolean',
-        'Images' => 'array'
+        'Images' => 'array',
+        'Price' => 'decimal:2'
     ];
 
-    protected $attributes = [
-        'Status' => 'Available',
-        'AC' => false,
-        'TV' => false,
-        'WiFi' => false,
-        'Geyser' => false,
-        'Balcony' => false,
-        'Intercom' => false,
-        'RoomService' => false,
-        'Minibar' => false,
-    ];
+    public function getFormattedPriceAttribute()
+    {
+        return '$' . number_format($this->Price, 2);
+    }
+
+    public function getAmenitiesAttribute()
+    {
+        $amenities = [];
+
+        $amenityMap = [
+            'AC' => 'Air Conditioning',
+            'TV' => 'TV',
+            'WiFi' => 'WiFi',
+            'Geyser' => 'Geyser',
+            'Balcony' => 'Balcony',
+            'Intercom' => 'Intercom',
+            'RoomService' => 'Room Service',
+            'Minibar' => 'Minibar'
+        ];
+
+        foreach ($amenityMap as $key => $value) {
+            if ($this->$key) {
+                $amenities[] = $value;
+            }
+        }
+
+        return $amenities;
+    }
 }

@@ -77,4 +77,29 @@ class Booking extends Model
 
         return $query->count() === 0;
     }
+    // Add payment relationship
+    public function payments()
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    // Calculate remaining amount
+    public function getRemainingAmountAttribute()
+    {
+        $paid = $this->payments()->completed()->sum('amount');
+        return $this->total_amount - $paid;
+    }
+
+    // Check if fully paid
+    public function getIsFullyPaidAttribute()
+    {
+        return $this->remaining_amount <= 0;
+    }
+
+    // Get total paid amount
+    public function getTotalPaidAttribute()
+    {
+        return $this->payments()->completed()->sum('amount');
+    }
+    // Accessor for is_fully_paid
 }

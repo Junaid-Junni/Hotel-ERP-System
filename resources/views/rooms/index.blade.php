@@ -18,13 +18,22 @@
                             <button class="btn btn-danger" id="deleteAllBtn">
                                 <i class="fa fa-trash"></i> Delete All
                             </button>
-                            <a href="{{ route('rooms.trash.index') }}" class="btn btn-secondary">
+                            <a href="{{ route('rooms.trash.empty') }}" class="btn btn-secondary">
                                 <i class="fa fa-trash-alt"></i> View Trash
                             </a>
                         </div>
                     </div>
                 </div>
                 <div class="card-body">
+                    @if (session('success'))
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            {{ session('success') }}
+                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                    @endif
+
                     @if($rooms->count() > 0)
                         <div class="table-responsive">
                             <table class="table table-bordered table-striped" id="roomsTable">
@@ -107,13 +116,13 @@
 </div>
 
 <!-- View Modal -->
-<div class="modal fade" id="viewModal" tabindex="-1">
+<div class="modal fade" id="viewModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Room Details</h5>
-                <button type="button" class="close" data-dismiss="modal">
-                    <span>&times;</span>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body" id="viewModalBody">
@@ -127,13 +136,13 @@
 </div>
 
 <!-- Delete Modal -->
-<div class="modal fade" id="deleteModal" tabindex="-1">
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Confirm Delete</h5>
-                <button type="button" class="close" data-dismiss="modal">
-                    <span>&times;</span>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
@@ -148,13 +157,13 @@
 </div>
 
 <!-- Delete All Modal -->
-<div class="modal fade" id="deleteAllModal" tabindex="-1">
+<div class="modal fade" id="deleteAllModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Confirm Delete All</h5>
-                <button type="button" class="close" data-dismiss="modal">
-                    <span>&times;</span>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
