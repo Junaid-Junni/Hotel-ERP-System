@@ -46,12 +46,12 @@
 </li>
 
 {{-- <--Invoices--> --}}
-<li class="nav-item">
+{{-- <li class="nav-item">
     <a href="#" class="nav-link {{ Request::is('invoice') ? 'active' : '' }}">
         <i class="fa-solid fa-file-invoice-dollar nav-icon fas"></i>
         <p>Invoice</p>
     </a>
-</li>
+</li> --}}
 <!-- Transactions Menu -->
 <li class="nav-item">
     <a href="{{ route('transactions.index') }}" class="nav-link {{ Request::is('transactions*') ? 'active' : '' }}">
@@ -61,14 +61,14 @@
 </li>
 
 {{-- <--Room Transfer--> --}}
-<li class="nav-item">
+{{-- <li class="nav-item">
     <a href="#" class="nav-link {{ Request::is('roomTransfer') ? 'active' : '' }}">
         <span class="material-symbols-outlined nav-icon fes">
             transfer_within_a_station
         </span>
         <p class="p-0 m-0">Room Transfer</p>
     </a>
-</li>
+</li> --}}
 {{-- <--Inventory--> --}}
 <li class="nav-item">
     <a href="{{ route('inventory.index') }}" class="nav-link {{ Request::is('inventory*') ? 'active' : '' }}">
