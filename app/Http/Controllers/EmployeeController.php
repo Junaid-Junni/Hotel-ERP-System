@@ -117,10 +117,11 @@ class EmployeeController extends Controller
     {
         try {
             $employee = Employee::findOrFail($id);
-            return response()->json([
-                'success' => true,
-                'employee' => $employee
-            ]);
+            return view('employees.show', compact('employee'));
+            // return response()->json([
+            //     'success' => true,
+            //     'employee' => $employee
+            // ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -304,10 +305,11 @@ class EmployeeController extends Controller
             $employee = Employee::findOrFail($id);
             $employee->delete();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Employee moved to trash successfully!'
-            ]);
+            return redirect()->route('employees.index')->with('success', 'Employee moved to trash successfully!');
+            // return response()->json([
+            //     'success' => true,
+            //     'message' => 'Employee moved to trash successfully!'
+            // ]);
         } catch (\Exception $e) {
             Log::error('Employee deletion failed: ' . $e->getMessage());
             return response()->json([
