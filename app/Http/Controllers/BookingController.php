@@ -77,10 +77,11 @@ class BookingController extends Controller
     {
         $booking = Booking::with('room')->findOrFail($id);
 
-        return response()->json([
-            'success' => true,
-            'booking' => $booking
-        ]);
+        return view('bookings.show', compact('booking'));
+        // return response()->json([
+        //     'success' => true,
+        //     'booking' => $booking
+        // ]);
     }
 
     // Show edit form
@@ -146,6 +147,7 @@ class BookingController extends Controller
         $room->update(['status' => 'Available']);
 
         $booking->delete();
+        return redirect()->route('bookings.index')->with('success', 'Booking moved to trash successfully!');
 
         return response()->json([
             'success' => true,
