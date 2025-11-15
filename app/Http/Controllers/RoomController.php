@@ -66,10 +66,12 @@ class RoomController extends Controller
     {
         $room = Room::findOrFail($id);
 
-        return response()->json([
-            'success' => true,
-            'room' => $room
-        ]);
+        return view('rooms.show', compact('room'));
+
+        // return response()->json([
+        //     'success' => true,
+        //     'room' => $room
+        // ]);
     }
 
     public function edit($id)
@@ -125,13 +127,15 @@ class RoomController extends Controller
 
     public function destroy($id)
     {
+        // dd($id);
         $room = Room::findOrFail($id);
         $room->delete();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Room moved to trash successfully!'
-        ]);
+        return redirect()->route('rooms.index')->with('success', 'Room moved to trash successfully!');
+        // return response()->json([
+        //     'success' => true,
+        //     'message' => 'Room moved to trash successfully!'
+        // ]);
     }
 
     public function destroyAll()

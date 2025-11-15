@@ -7,13 +7,13 @@
                 <div class="card-header bg-defult">
                     <h2 class="card-title">
                         <i class="fa-solid fa-eye mr-2"></i>
-                        Room Details - Room {{ $Room->RoomNo }}
+                        Room Details - Room {{ $room->RoomNo }}
                     </h2>
                     <div class="card-tools">
-                        <a href="{{ route('room.edit', $Room->id) }}" class="btn bg-navy btn-sm">
+                        <a href="{{ route('rooms.edit', $room->id) }}" class="btn bg-navy btn-sm">
                             <i class="fa-solid fa-edit mr-1"></i>Edit
                         </a>
-                        <a href="{{ route('room.index') }}" class="btn btn-secondary btn-sm">
+                        <a href="{{ route('rooms.index') }}" class="btn btn-secondary btn-sm">
                             <i class="fa-solid fa-arrow-left mr-1"></i>Back
                         </a>
                     </div>
@@ -27,33 +27,33 @@
                                     <table class="table table-bordered">
                                         <tr>
                                             <th width="40%">Room Number:</th>
-                                            <td><strong>Room {{ $Room->RoomNo }}</strong></td>
+                                            <td><strong>Room {{ $room->RoomNo }}</strong></td>
                                         </tr>
                                         <tr>
                                             <th>Floor:</th>
-                                            <td>{{ $Room->Floor }}</td>
+                                            <td>{{ $room->Floor }}</td>
                                         </tr>
                                         <tr>
                                             <th>Type:</th>
                                             <td>
-                                                <span class="badge bg-{{ $Room->Type == 'Standard' ? 'secondary' : ($Room->Type == 'Deluxe' ? 'primary' : 'warning') }}">
-                                                    {{ $Room->Type }}
+                                                <span class="badge bg-{{ $room->Type == 'Standard' ? 'secondary' : ($room->Type == 'Deluxe' ? 'primary' : 'warning') }}">
+                                                    {{ $room->Type }}
                                                 </span>
                                             </td>
                                         </tr>
                                         <tr>
                                             <th>Price:</th>
-                                            <td>${{ number_format($Room->Price, 2) }}/night</td>
+                                            <td>${{ number_format($room->Price, 2) }}/night</td>
                                         </tr>
                                         <tr>
                                             <th>Capacity:</th>
-                                            <td>{{ $Room->Capacity }} Persons</td>
+                                            <td>{{ $room->Capacity }} Persons</td>
                                         </tr>
                                         <tr>
                                             <th>Status:</th>
                                             <td>
-                                                <span class="badge bg-{{ $Room->Status == 'Available' ? 'success' : ($Room->Status == 'Occupied' ? 'danger' : ($Room->Status == 'Maintenance' ? 'warning' : 'info')) }}">
-                                                    {{ $Room->Status }}
+                                                <span class="badge bg-{{ $room->Status == 'Available' ? 'success' : ($room->Status == 'Occupied' ? 'danger' : ($room->Status == 'Maintenance' ? 'warning' : 'info')) }}">
+                                                    {{ $room->Status }}
                                                 </span>
                                             </td>
                                         </tr>
@@ -62,24 +62,24 @@
                                 <div class="col-md-6">
                                     <h5 class="border-bottom pb-2">Amenities</h5>
                                     <div class="amenities-list">
-                                        @foreach($Room->amenities as $amenity)
+                                        @foreach($room->amenities as $amenity)
                                             <div class="d-flex align-items-center mb-2">
                                                 <i class="fa-solid fa-check text-success mr-2"></i>
                                                 <span>{{ $amenity }}</span>
                                             </div>
                                         @endforeach
-                                        @if(count($Room->amenities) == 0)
+                                        @if(count($room->amenities) == 0)
                                             <p class="text-muted">No amenities added</p>
                                         @endif
                                     </div>
                                 </div>
                             </div>
 
-                            @if($Room->Description)
+                            @if($room->Description)
                             <div class="row mt-3">
                                 <div class="col-md-12">
                                     <h5 class="border-bottom pb-2">Description</h5>
-                                    <p>{{ $Room->Description }}</p>
+                                    <p>{{ $room->Description }}</p>
                                 </div>
                             </div>
                             @endif
@@ -87,9 +87,9 @@
 
                         <div class="col-md-4">
                             <h5 class="border-bottom pb-2">Room Images</h5>
-                            @if($Room->Images && count($Room->Images) > 0)
+                            @if($room->Images && count($room->Images) > 0)
                                 <div class="row">
-                                    @foreach($Room->Images as $image)
+                                    @foreach($room->Images as $image)
                                         <div class="col-md-6 mb-3">
                                             <img src="{{ asset('storage/' . $image) }}" class="img-thumbnail w-100" style="height: 150px; object-fit: cover;">
                                         </div>
@@ -114,11 +114,11 @@
                                     </h5>
                                 </div>
                                 <div class="card-body">
-                                    @if($Room->activeBooking)
+                                    @if($room->activeBooking)
                                         <div class="alert alert-warning">
                                             <strong>Currently Booked:</strong>
-                                            {{ $Room->activeBooking->guest_name }}
-                                            ({{ $Room->activeBooking->check_in->format('M d, Y') }} - {{ $Room->activeBooking->check_out->format('M d, Y') }})
+                                            {{ $room->activeBooking->guest_name }}
+                                            ({{ $room->activeBooking->check_in->format('M d, Y') }} - {{ $room->activeBooking->check_out->format('M d, Y') }})
                                         </div>
                                     @else
                                         <p class="text-muted mb-0">No active booking</p>

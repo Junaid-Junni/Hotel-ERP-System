@@ -87,15 +87,22 @@
                                         </td>
                                         <td>
                                             <div class="btn-group">
-                                                <button class="btn btn-sm btn-info view-btn" data-id="{{ $room->id }}" title="View">
+                                                {{-- <button class="btn btn-sm btn-info view-btn" data-id="{{ $room->id }}" title="View">
                                                     <i class="fa fa-eye"></i>
-                                                </button>
+                                                </button> --}}
+                                                <a href="{{ route('rooms.show', $room->id) }}" class="btn btn-sm btn-warning" title="Edit">
+                                                     <i class="fa fa-eye"></i>
+                                                </a>
                                                 <a href="{{ route('rooms.edit', $room->id) }}" class="btn btn-sm btn-warning" title="Edit">
                                                     <i class="fa fa-edit"></i>
                                                 </a>
-                                                <button class="btn btn-sm btn-danger delete-btn" data-id="{{ $room->id }}" title="Delete">
-                                                    <i class="fa fa-trash"></i>
-                                                </button>
+                                                <form method="POST" action="{{ route('rooms.destroy', $room->id) }}" style="display:inline;">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit}" class="btn btn-sm btn-danger delete-btn" title="Delete">
+                                                        <i class="fa fa-trash"></i>
+                                                    </button>
+                                                </form>
                                             </div>
                                         </td>
                                     </tr>
