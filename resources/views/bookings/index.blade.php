@@ -76,9 +76,9 @@
                                         </td>
                                         <td>
                                             <div class="btn-group">
-                                                <button class="btn btn-sm btn-info view-btn" data-id="{{ $booking->id }}">
+                                                <a  href="{{ route('bookings.show', $booking->id) }}" class="btn btn-sm btn-info view-btn" >
                                                     <i class="fa fa-eye"></i>
-                                                </button>
+                                                </a>
                                                 <a href="{{ route('bookings.edit', $booking->id) }}" class="btn btn-sm btn-warning">
                                                     <i class="fa fa-edit"></i>
                                                 </a>
@@ -102,10 +102,14 @@
                                                         <i class="fa fa-sign-out"></i>
                                                     </button>
                                                 @endif
+                                                <form method="POST" action="{{ route('bookings.destroy', $booking->id) }}" style="display:inline;">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit}" class="btn btn-sm btn-danger delete-btn" title="Delete">
+                                                        <i class="fa fa-trash"></i>
+                                                    </button>
 
-                                                <button class="btn btn-sm btn-danger delete-btn" data-id="{{ $booking->id }}">
-                                                    <i class="fa fa-trash"></i>
-                                                </button>
+                                                </form>
                                             </div>
                                         </td>
                                     </tr>
